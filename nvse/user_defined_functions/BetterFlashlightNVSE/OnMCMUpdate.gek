@@ -1,0 +1,7 @@
+Begin Function { array_var aUpdatedMods }
+	if eval (Ar_Find "BetterFlashlightNVSE" aUpdatedMods) != Ar_BadNumericIndex
+		ReloadPluginConfig "BetterFlashlightNVSE"
+	endif
+
+	aUpdatedMods = ar_Null
+End

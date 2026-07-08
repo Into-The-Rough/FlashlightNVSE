@@ -1,0 +1,21 @@
+<rect name="PBB">
+	<_posX>0.95</_posX>
+	<_posY>0.15</_posY>
+	<_fScale>1</_fScale>
+	<visible><copy src="ActionPoints" trait="visible"/></visible>
+	<alpha>255</alpha>
+	<depth>50</depth>
+
+	<image name="PBBIcon">
+		<filename>menus\pipboybattery\full.dds</filename>
+		<visible>&true;</visible>
+		<alpha>255</alpha>
+		<depth>1</depth>
+		<width><copy>32</copy><mult src="PBB" trait="_fScale"/></width>
+		<height><copy>64</copy><mult src="PBB" trait="_fScale"/></height>
+		<x><copy src="screen()" trait="width"/><mul><copy src="parent()" trait="_posX"/></mul></x>
+		<y><copy src="screen()" trait="height"/><mul><copy src="parent()" trait="_posY"/></mul></y>
+		<zoom>&scale;</zoom>
+		<systemcolor>&hudmain;</systemcolor>
+	</image>
+</rect>

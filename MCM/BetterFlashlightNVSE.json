@@ -1,0 +1,362 @@
+{
+	"modName": "BetterFlashlightNVSE",
+	"displayName": "Better Flashlight NVSE",
+	"description": "Post-process flashlight cone with an optional volumetric beam. All settings apply live.",
+	"saveFile": "BetterFlashlightNVSE.ini",
+	"minMCMVersion": 1.00,
+	"minModVersion": 1.00,
+	"requirements": [
+		{ "type": "file", "file": "NVSE/Plugins/scripts/ln_betterflashlightnvse-mcm.txt" }
+	],
+	"submenus": {
+		"1": {
+			"listTitle": "Flashlight",
+			"pageTitle": "Flashlight",
+			"columns": 1,
+			"enable": 1,
+			"active": 1,
+			"options": {
+				"1": {
+					"title": "Enabled",
+					"type": 5,
+					"enable": 1,
+					"mouse": "Master toggle for the flashlight.",
+					"vars": [{ "configINI": "Flashlight:Enabled", "default": 1 }]
+				},
+				"2": {
+					"title": "Attach To Weapon",
+					"type": 5,
+					"enable": 1,
+					"mouse": "Light follows the weapon when armed, otherwise the camera.",
+					"vars": [{ "configINI": "Flashlight:AttachToWeapon", "default": 1 }]
+				},
+				"15": {
+					"title": "Soften Foliage Edges",
+					"type": 5,
+					"enable": 1,
+					"mouse": "Wrap lighting: lifts the dark rims on grass/tree edges, at the cost of a flatter, lower-contrast beam. A/B it on foliage.",
+					"vars": [{ "configINI": "Flashlight:SoftEdges", "default": 1 }]
+				},
+				"3": {
+					"title": "Cone Angle",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Width of the light cone in degrees.",
+					"vars": [{ "configINI": "Flashlight:Angle", "default": 18 }],
+					"scale": { "valueDecimal": 0, "valueIncrement": 1, "valueMin": 5, "valueMax": 60 }
+				},
+				"4": {
+					"title": "Spot Size",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Shrinks the lit pool (cone + cookie together). Lower = tighter.",
+					"vars": [{ "configINI": "Flashlight:SpotSize", "default": 1.5 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.1, "valueMax": 1.5 }
+				},
+				"14": {
+					"title": "Near Fade",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Dims the pool point-blank (in game units) so a close wall doesn't blow out to white. 0 = off.",
+					"vars": [{ "configINI": "Flashlight:NearFade", "default": 150 }],
+					"scale": { "valueDecimal": 0, "valueIncrement": 5, "valueMin": 0, "valueMax": 300 }
+				},
+				"5": {
+					"title": "Distance",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Reach of the light in game units.",
+					"vars": [{ "configINI": "Flashlight:Distance", "default": 1800 }],
+					"scale": { "valueDecimal": 0, "valueIncrement": 50, "valueMin": 100, "valueMax": 3000 }
+				},
+				"6": {
+					"title": "Colour",
+					"type": 0,
+					"enable": 1
+				},
+				"7": {
+					"title": "Colour R",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Red channel (values above 1 are HDR).",
+					"vars": [{ "configINI": "Flashlight:ColorR", "default": 2.0 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 3.0 }
+				},
+				"8": {
+					"title": "Colour G",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Green channel (values above 1 are HDR).",
+					"vars": [{ "configINI": "Flashlight:ColorG", "default": 1.85 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 3.0 }
+				},
+				"9": {
+					"title": "Colour B",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Blue channel. Raise toward R/G for a cooler beam.",
+					"vars": [{ "configINI": "Flashlight:ColorB", "default": 1.65 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 3.0 }
+				},
+				"10": {
+					"title": "Dimmer",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Overall colour brightness multiplier.",
+					"vars": [{ "configINI": "Flashlight:Dimmer", "default": 1.0 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.1, "valueMin": 0.0, "valueMax": 5.0 }
+				},
+				"11": {
+					"title": "Intensity",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Beam brightness on surfaces (pre-tonemapping). Lower = subtler.",
+					"vars": [{ "configINI": "Flashlight:Intensity", "default": 0.35 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 1.0 }
+				},
+				"16": {
+					"title": "Beam Texture",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Subtle reflector rings and unevenness in the projected beam. 0 = smooth.",
+					"vars": [{ "configINI": "Flashlight:CookieStrength", "default": 0.25 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 1.0 }
+				},
+				"12": {
+					"title": "Flicker",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Sporadic flicker - mostly steady with occasional brief dips. 0 = off.",
+					"vars": [{ "configINI": "Flashlight:Flicker", "default": 0.25 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 1.0 }
+				},
+				"13": {
+					"title": "Warm-Up Time",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Brightness ramp when the light turns on (seconds). 0 = instant (LED).",
+					"vars": [{ "configINI": "Flashlight:WarmupTime", "default": 0.4 }],
+					"scale": { "valueDecimal": 1, "valueIncrement": 0.1, "valueMin": 0.0, "valueMax": 2.0 }
+				}
+			}
+		},
+		"2": {
+			"listTitle": "Volumetric",
+			"pageTitle": "Volumetric Beam",
+			"columns": 1,
+			"enable": 1,
+			"options": {
+				"1": {
+					"title": "Volumetric Beam",
+					"type": 5,
+					"enable": 1,
+					"mouse": "Visible shaft of light in the air. Reads best in dark/dusty areas.",
+					"vars": [{ "configINI": "Volumetric:Enabled", "default": 1 }]
+				},
+				"2": {
+					"title": "In Third Person",
+					"type": 5,
+					"enable": 1,
+					"mouse": "Show the in-air beam while in third person.",
+					"vars": [{ "configINI": "Volumetric:ThirdPersonEnabled", "default": 1 }]
+				},
+				"3": {
+					"title": "In First Person",
+					"type": 5,
+					"enable": 1,
+					"mouse": "Show the in-air glow while in first person.",
+					"vars": [{ "configINI": "Volumetric:FirstPersonEnabled", "default": 1 }]
+				},
+				"4": {
+					"title": "Strength",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Brightness of the in-air beam. First person scales it by its own strength below.",
+					"vars": [{ "configINI": "Volumetric:Strength", "default": 5.0 }],
+					"scale": { "valueDecimal": 1, "valueIncrement": 0.5, "valueMin": 0.0, "valueMax": 30.0 }
+				},
+				"5": {
+					"title": "Anisotropy",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Forward-scatter glow. ~0.4-0.5 reads best side-on, higher when staring into the light.",
+					"vars": [{ "configINI": "Volumetric:Anisotropy", "default": 0.45 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 0.95 }
+				},
+				"6": {
+					"title": "Height Falloff",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "How strongly the dust hugs the ground. Higher = denser low.",
+					"vars": [{ "configINI": "Volumetric:HeightFalloff", "default": 1.0 }],
+					"scale": { "valueDecimal": 1, "valueIncrement": 0.1, "valueMin": 0.0, "valueMax": 5.0 }
+				},
+				"7": {
+					"title": "Max Distance",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "How far the beam marches in game units (clamped to the nearest surface).",
+					"vars": [{ "configINI": "Volumetric:MaxDistance", "default": 1500 }],
+					"scale": { "valueDecimal": 0, "valueIncrement": 50, "valueMin": 100, "valueMax": 3000 }
+				},
+				"8": {
+					"title": "First Person Strength",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "In-air glow strength in first person. 0 = off.",
+					"vars": [{ "configINI": "Volumetric:FirstPersonStrength", "default": 0.15 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 1.0 }
+				},
+				"9": {
+					"title": "First Person Offset Right",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Pushes the marched beam origin sideways (game units). Higher = a real cone shape, lower = haze from the eye.",
+					"vars": [{ "configINI": "Volumetric:FirstPersonOffsetRight", "default": 8 }],
+					"scale": { "valueDecimal": 0, "valueIncrement": 2, "valueMin": 0, "valueMax": 60 }
+				},
+				"10": {
+					"title": "First Person Offset Down",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Pushes the marched beam origin downward (game units), like a hip-held torch.",
+					"vars": [{ "configINI": "Volumetric:FirstPersonOffsetDown", "default": 4 }],
+					"scale": { "valueDecimal": 0, "valueIncrement": 2, "valueMin": 0, "valueMax": 40 }
+				}
+			}
+		},
+		"3": {
+			"listTitle": "Surface Lighting",
+			"pageTitle": "Surface Lighting",
+			"columns": 1,
+			"enable": 1,
+			"options": {
+				"1": {
+					"title": "Material Lighting",
+					"type": 5,
+					"enable": 1,
+					"mouse": "Master switch for the material-aware static geometry pass.",
+					"vars": [{ "configINI": "MaterialLight:Enabled", "default": 1 }]
+				},
+				"2": {
+					"title": "Surface Pass",
+					"type": 5,
+					"enable": 1,
+					"mouse": "Additive depth-tested pass over nearby static geometry. Toggle this for A/B comparisons.",
+					"vars": [{ "configINI": "MaterialLight:Render", "default": 1 }]
+				},
+				"3": {
+					"title": "Geometry Strength",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Brightness for the material geometry pass only. Set to zero to isolate the screen-space cone.",
+					"vars": [{ "configINI": "MaterialLight:Intensity", "default": 0.30 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 2.0 }
+				},
+				"4": {
+					"title": "Hotspot Reduction",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Caps only the added flashlight brightness. 0 = off; higher values clamp close hotspots harder.",
+					"vars": [{ "configINI": "Flashlight:HotspotLimit", "default": 1.0 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 2.0 }
+				},
+				"5": {
+					"title": "Normal Strength",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Normal-map strength for the material pass. 0 uses vertex normals only; higher values exaggerate surface detail.",
+					"vars": [{ "configINI": "MaterialLight:NormalStrength", "default": 2.50 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.25, "valueMin": 0.0, "valueMax": 5.0 }
+				},
+				"6": {
+					"title": "Specular Strength",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Shiny highlight strength for specular materials in the material pass.",
+					"vars": [{ "configINI": "MaterialLight:Specular", "default": 0.50 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 3.0 }
+				}
+			}
+		},
+		"4": {
+			"listTitle": "Battery",
+			"pageTitle": "Pip-Boy Battery",
+			"columns": 1,
+			"enable": 1,
+			"options": {
+				"1": {
+					"title": "Battery System",
+					"type": 5,
+					"enable": 1,
+					"mouse": "Drains charge while the Pip-Boy flashlight is on and recharges while it is off.",
+					"vars": [{ "configINI": "Battery:Enabled", "default": 1 }]
+				},
+				"2": {
+					"title": "Drain Rate",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Charge lost per second while the flashlight is on.",
+					"vars": [{ "configINI": "Battery:DrainRate", "default": 2.0 }],
+					"scale": { "valueDecimal": 1, "valueIncrement": 0.5, "valueMin": 0.1, "valueMax": 20.0 }
+				},
+				"3": {
+					"title": "Recharge Rate",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Charge recovered per second while the flashlight is off.",
+					"vars": [{ "configINI": "Battery:RechargeRate", "default": 2.5 }],
+					"scale": { "valueDecimal": 1, "valueIncrement": 0.5, "valueMin": 0.1, "valueMax": 20.0 }
+				},
+				"4": {
+					"title": "Recharge Threshold",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Charge needed after full depletion before the flashlight can turn on again.",
+					"vars": [{ "configINI": "Battery:RechargeThreshold", "default": 10.0 }],
+					"scale": { "valueDecimal": 0, "valueIncrement": 5, "valueMin": 0.0, "valueMax": 50.0 }
+				},
+				"5": {
+					"title": "Pulse Threshold",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "The icon flashes when the battery recovers to full after dropping below this charge.",
+					"vars": [{ "configINI": "Battery:PulseThreshold", "default": 25.0 }],
+					"scale": { "valueDecimal": 0, "valueIncrement": 5, "valueMin": 0.0, "valueMax": 75.0 }
+				},
+				"6": {
+					"title": "Icon Set",
+					"type": 1,
+					"enable": 1,
+					"mouse": "Choose which battery icon texture set to use.",
+					"vars": [{ "configINI": "Battery:IconSet", "default": 2 }],
+					"strings": ["Default 9v", "Bars broken", "Notched clean", "Flash bordered", "Flash broken"]
+				},
+				"7": {
+					"title": "Icon X",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Horizontal icon position as a fraction of screen width.",
+					"vars": [{ "configINI": "Battery:IconPosX", "default": 0.97 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.01, "valueMin": 0.0, "valueMax": 1.0 }
+				},
+				"8": {
+					"title": "Icon Y",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Vertical icon position as a fraction of screen height.",
+					"vars": [{ "configINI": "Battery:IconPosY", "default": 0.87 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.01, "valueMin": 0.0, "valueMax": 1.0 }
+				},
+				"9": {
+					"title": "Icon Scale",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Battery icon size multiplier.",
+					"vars": [{ "configINI": "Battery:IconScale", "default": 0.6 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.1, "valueMin": 0.1, "valueMax": 3.0 }
+				}
+			}
+		}
+	}
+}

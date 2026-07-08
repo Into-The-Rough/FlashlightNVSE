@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{4C1B4E20-6D8F-4F9A-9C1A-FA51B88ED001}</ProjectGuid>
+    <RootNamespace>BetterFlashlightNVSE</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings"></ImportGroup>
+  <ImportGroup Label="Shared"></ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(ProjectDir)Release\</OutDir>
+    <IntDir>$(ProjectDir)Release\obj\</IntDir>
+    <TargetName>BetterFlashlightNVSE</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(ProjectDir)Debug\</OutDir>
+    <IntDir>$(ProjectDir)Debug\obj\</IntDir>
+    <TargetName>BetterFlashlightNVSE</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;NEWVEGAS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles>$(ProjectDir)src\NewVegas\Framework.h</ForcedIncludeFiles>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+	    <Link>
+	      <SubSystem>Windows</SubSystem>
+	      <EnableCOMDATFolding>false</EnableCOMDATFolding>
+	      <OptimizeReferences>true</OptimizeReferences>
+	      <GenerateDebugInformation>true</GenerateDebugInformation>
+	      <EnableUAC>false</EnableUAC>
+	      <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
+	      <AdditionalDependencies>dxguid.lib;version.lib;$(ProjectDir)lib\Nvidia\x86\nvapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+	    </Link>
+	    <PostBuildEvent>
+	      <Command>if not exist "D:\Modding\VNV\mods\FlashlightNVSE\NVSE\Plugins\" mkdir "D:\Modding\VNV\mods\FlashlightNVSE\NVSE\Plugins\"
+copy /Y "$(TargetPath)" "D:\Modding\VNV\mods\FlashlightNVSE\NVSE\Plugins\"
+if exist "$(TargetDir)$(TargetName).pdb" copy /Y "$(TargetDir)$(TargetName).pdb" "D:\Modding\VNV\mods\FlashlightNVSE\NVSE\Plugins\"</Command>
+	    </PostBuildEvent>
+	  </ItemDefinitionGroup>
+	  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;NEWVEGAS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles>$(ProjectDir)src\NewVegas\Framework.h</ForcedIncludeFiles>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+	    <Link>
+	      <SubSystem>Windows</SubSystem>
+	      <GenerateDebugInformation>true</GenerateDebugInformation>
+	      <EnableUAC>false</EnableUAC>
+	      <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
+	      <AdditionalDependencies>dxguid.lib;version.lib;$(ProjectDir)lib\Nvidia\x86\nvapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+	    </Link>
+	    <PostBuildEvent>
+	      <Command>if not exist "D:\Modding\VNV\mods\FlashlightNVSE\NVSE\Plugins\" mkdir "D:\Modding\VNV\mods\FlashlightNVSE\NVSE\Plugins\"
+copy /Y "$(TargetPath)" "D:\Modding\VNV\mods\FlashlightNVSE\NVSE\Plugins\"
+if exist "$(TargetDir)$(TargetName).pdb" copy /Y "$(TargetDir)$(TargetName).pdb" "D:\Modding\VNV\mods\FlashlightNVSE\NVSE\Plugins\"</Command>
+	    </PostBuildEvent>
+	  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\base\PluginVersion.cpp" />
+    <ClCompile Include="src\base\SafeWrite.cpp" />
+    <ClCompile Include="src\core\Config.cpp" />
+    <ClCompile Include="src\core\FlashlightBridge.cpp" />
+    <ClCompile Include="src\core\EffectRecord.cpp" />
+    <ClCompile Include="src\core\RenderManager.cpp" />
+    <ClCompile Include="src\core\ShaderManager.cpp" />
+    <ClCompile Include="src\core\ShaderRecord.cpp" />
+    <ClCompile Include="src\core\TextureManager.cpp" />
+    <ClCompile Include="src\core\TextureRecord.cpp" />
+    <ClCompile Include="src\core\Hooks\GameCommon.cpp" />
+    <ClCompile Include="src\effects\CombineDepth.cpp" />
+    <ClCompile Include="src\effects\Flashlight.cpp" />
+    <ClCompile Include="src\effects\Normals.cpp" />
+    <ClCompile Include="src\effects\Volumetric.cpp" />
+    <ClCompile Include="src\features\Battery.cpp" />
+    <ClCompile Include="src\NewVegas\Managers.cpp" />
+    <ClCompile Include="src\NewVegas\nvse\GameNi.cpp" />
+    <ClCompile Include="src\NewVegas\Hooks\Game.cpp" />
+    <ClCompile Include="src\NewVegas\Hooks\Hooks.cpp" />
+    <ClCompile Include="src\NewVegas\Hooks\MaterialPass.cpp" />
+    <ClCompile Include="src\NewVegas\Hooks\Render.cpp" />
+    <ClCompile Include="lib\Detours\detours.cpp" />
+    <ClCompile Include="lib\Detours\disasm.cpp" />
+    <ClCompile Include="lib\Detours\modules.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\base\PluginVersion.h" />
+    <ClInclude Include="src\base\SafeWrite.h" />
+    <ClInclude Include="src\base\Types.h" />
+    <ClInclude Include="src\base\Utils.h" />
+    <ClInclude Include="src\core\Config.h" />
+    <ClInclude Include="src\core\FlashlightBridge.h" />
+    <ClInclude Include="src\core\EffectRecord.h" />
+    <ClInclude Include="src\core\RenderManager.h" />
+    <ClInclude Include="src\core\ShaderManager.h" />
+    <ClInclude Include="src\core\ShaderRecord.h" />
+    <ClInclude Include="src\core\TextureManager.h" />
+    <ClInclude Include="src\core\TextureRecord.h" />
+    <ClInclude Include="src\core\Hooks\GameCommon.h" />
+    <ClInclude Include="src\effects\CombineDepth.h" />
+    <ClInclude Include="src\effects\Flashlight.h" />
+    <ClInclude Include="src\effects\Normals.h" />
+    <ClInclude Include="src\effects\Volumetric.h" />
+    <ClInclude Include="src\features\Battery.h" />
+    <ClInclude Include="src\NewVegas\Base.h" />
+    <ClInclude Include="src\NewVegas\Defines.h" />
+    <ClInclude Include="src\NewVegas\Framework.h" />
+    <ClInclude Include="src\NewVegas\Managers.h" />
+    <ClInclude Include="src\NewVegas\Plugin.h" />
+    <ClInclude Include="src\NewVegas\nvse\Game.h" />
+    <ClInclude Include="src\NewVegas\nvse\GameHavok.h" />
+    <ClInclude Include="src\NewVegas\nvse\GameNi.h" />
+    <ClInclude Include="src\NewVegas\nvse\class_vtbls.h" />
+    <ClInclude Include="src\NewVegas\Hooks\Game.h" />
+    <ClInclude Include="src\NewVegas\Hooks\Hooks.h" />
+    <ClInclude Include="src\NewVegas\Hooks\MaterialPass.h" />
+    <ClInclude Include="src\NewVegas\Hooks\Render.h" />
+    <ClInclude Include="lib\Detours\detours.h" />
+    <ClInclude Include="lib\Nvidia\nvapi.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="exports.def" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(ProjectDir)packages\Microsoft.DXSDK.D3DX.9.29.952.8\build\native\Microsoft.DXSDK.D3DX.targets" Condition="Exists('$(ProjectDir)packages\Microsoft.DXSDK.D3DX.9.29.952.8\build\native\Microsoft.DXSDK.D3DX.targets')" />
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(ProjectDir)packages\Microsoft.DXSDK.D3DX.9.29.952.8\build\native\Microsoft.DXSDK.D3DX.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(ProjectDir)packages\Microsoft.DXSDK.D3DX.9.29.952.8\build\native\Microsoft.DXSDK.D3DX.targets'))" />
+  </Target>
+</Project>
