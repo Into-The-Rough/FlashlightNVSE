@@ -2,6 +2,15 @@
 #include "../core/Config.h"
 
 static void SetVanillaPipboyLightCulled(bool abCulled);
+static constexpr UInt32 kBSUtilities_GetObjectByName = 0x4AAE30;
+
+static bool HasB42Projection() {
+	if (!Player || Player->isThirdPerson || !Player->firstPersonNiNode)
+		return false;
+	if (CdeclCall<NiAVObject*>(kBSUtilities_GetObjectByName, Player->firstPersonNiNode, "OldIS"))
+		return true;
+	return CdeclCall<NiAVObject*>(kBSUtilities_GetObjectByName, Player->firstPersonNiNode, "PRJ") != nullptr;
+}
 
 
 void FlashlightEffect::RegisterConstants() {
@@ -66,14 +75,14 @@ void FlashlightEffect::UpdateConstants() {
 	// based on JIP https://github.com/jazzisparis/JIP-LN-NVSE/blob/5a30ac4356ea0e93b9ff357b5031b1e420240a4d/functions_jip/jip_fn_ui.h#L1469
 	UInt32 lightIsOn = ThisStdCall<bool>(0x822B90, &Player->magicTarget, (void*)&(*(MagicItem**)(ThisStdCall<uint8_t*>(0x93CCD0, NULL) + 0x18)), 1);
 
-	spotLightActive = Enabled && lightIsOn;
+	spotLightActive = Enabled && lightIsOn && !b42ProjectionActive;
 	if (!spotLightActive) {
 		// disable light by setting it to 0 dimmer & radius
 		SpotLight->fadeValue = 0.0f;
 		SpotLight->radius = 0.0f;
 		SpotLight->resetTraits = false;
 		DisableEngineLight();
-		SetVanillaPipboyLightCulled(false);
+		SetVanillaPipboyLightCulled(Enabled && lightIsOn && b42ProjectionActive);
 		return;
 	}
 
@@ -178,7 +187,7 @@ void FlashlightEffect::GetFlashlightViewProj() {
 }
 
 void FlashlightEffect::UpdateEngineLight(const NiPoint3& Position, const NiMatrix33& Rotation) {
-	if (!Settings.engineLightEnabled || !WorldSceneGraph) {
+	if (!Settings.engineLightEnabled || !WorldSceneGraph || b42ProjectionActive) {
 		DestroyEngineLight();
 		return;
 	}
@@ -222,7 +231,7 @@ void FlashlightEffect::UpdateEngineLight(const NiPoint3& Position, const NiMatri
 }
 
 void FlashlightEffect::QueueEngineLight() {
-	if (!EngineLight || !Settings.engineLightEnabled || !spotLightActive)
+	if (!EngineLight || !Settings.engineLightEnabled || !spotLightActive || b42ProjectionActive)
 		return;
 
 	ShadowSceneNode* sceneNode = BSShaderManager::GetShadowSceneNode(0);
@@ -241,6 +250,25 @@ void FlashlightEffect::QueueEngineLight() {
 	}
 	if (ShadowSceneLight* lightData = ShadowSceneLight::CreatePointLight(EngineLight, sceneNode->portalGraph))
 		sceneNode->QueueLightData(lightData);
+}
+
+void FlashlightEffect::PrepareB42OpticsRender() {
+	b42ProjectionActive = HasB42Projection();
+	if (!b42ProjectionActive)
+		return;
+	SetVanillaPipboyLightCulled(true);
+	DisableEngineLight();
+	if (!EngineLight)
+		return;
+	ShadowSceneNode* sceneNode = BSShaderManager::GetShadowSceneNode(0);
+	if (!sceneNode)
+		return;
+	for (auto entry = sceneNode->lights.start; entry; entry = entry->next) {
+		if (entry->data && entry->data->sourceLight == EngineLight) {
+			sceneNode->UpdateQueuedLight(entry->data);
+			return;
+		}
+	}
 }
 
 void FlashlightEffect::DisableEngineLight() {

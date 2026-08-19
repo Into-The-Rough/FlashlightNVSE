@@ -1,0 +1,174 @@
+[center][size=5][b]Better Flashlight NVSE[/b][/size]
+[size=3]A standalone, configurable flashlight for Fallout: New Vegas.[/size][/center]
+
+[line]
+
+[size=4][b]Overview[/b][/size]
+
+Better Flashlight NVSE replaces the flat vanilla Pip-Boy light feel with a real projected flashlight effect. It uses the existing Pip-Boy light toggle, but renders a configurable cone, surface pool, material-aware static geometry lighting, volumetric beam, flicker, warm-up, and hotspot control.
+
+It does [b]not[/b] require New Vegas Reloaded, NVR Shadows, or any external shader loader.
+
+[b]This is meant to be used instead of the New Vegas Reloaded flashlight, not alongside it.[/b] The flashlight technique here is derived from NVR's, then rebuilt as a small standalone NVSE plugin with its own effect loader, its own depth resolve path, and a lot of extra work on top: volumetrics, a material-aware geometry pass, battery, flicker and warm-up, and full MCM control. If you already run NVR, install this and Better Flashlight NVSE will switch NVR's own flashlight cone off automatically so the two never double up. If you do not run NVR, you get the flashlight without pulling in a full shader suite.
+
+[line]
+
+[size=4][b]Features[/b][/size]
+
+[list]
+[*][b]Projected flashlight cone[/b] with configurable angle, distance, colour, intensity, and spot size.
+[*][b]Weapon attachment[/b]: follow the weapon when armed, or fall back to the camera.
+[*][b]Depth-aware rendering[/b] with built-in world/viewmodel depth handling.
+[*][b]Material-aware surface lighting[/b] for nearby static geometry.
+[*][b]Normal map influence[/b] for surfaces that provide suitable tangent/normal data.
+[*][b]Specular highlights[/b] on suitable static materials.
+[*][b]Hotspot reduction[/b] to keep close walls and shelves from clipping to white.
+[*][b]Near fade[/b] for point-blank surfaces.
+[*][b]Volumetric beam[/b]: a real in-air light shaft (single-scattering ray march), on by default in both first and third person, with separate per-view toggles.
+[*][b]Landing protection[/b]: the air shaft automatically yields where the beam lands, so the lit pool keeps its normal brightness at any shaft strength.
+[*][b]Pip-Boy battery[/b]: charge drains while the light is on and recovers while it is off, with a HUD icon, low-charge warning flicker, and several icon styles.
+[*][b]Warm-up ramp[/b] when turning the light on.
+[*][b]Sporadic flicker[/b] for a less sterile beam.
+[*][b]MCM configuration[/b] with live setting updates.
+[*][b]INI fallback[/b] for users who prefer manual config.
+[/list]
+
+[line]
+
+[size=4][b]Requirements[/b][/size]
+
+[list]
+[*][b]xNVSE[/b]
+[*][b]Fallout: New Vegas 1.4.0.525[/b] standard runtime
+[*][b]DirectX End-User Runtimes (June 2010)[/b] if you do not already have [font=Courier New]d3dx9_43.dll[/font]
+[*][b]Microsoft Visual C++ Redistributable 2015-2022 x86[/b] if you do not already have the x86 runtime installed
+[*][b]MCM Extender[/b] for the in-game menu and live MCM reloads
+[/list]
+
+MCM Extender normally brings its own UI requirements such as MCM/UIO. If you do not use MCM Extender, the plugin can still read [font=Courier New]config\BetterFlashlightNVSE.ini[/font], but external INI edits require a restart.
+
+[b]Not required:[/b]
+[list]
+[*]New Vegas Reloaded
+[*]NVR Shadows
+[*]External shader loaders
+[*]JIP LN NVSE
+[*]JohnnyGuitar NVSE
+[*]ShowOff xNVSE
+[*]kNVSE
+[*]SUP NVSE
+[/list]
+
+[line]
+
+[size=4][b]Installation[/b][/size]
+
+Install with a mod manager.
+
+The archive should place files under:
+
+[font=Courier New]
+NVSE\Plugins\BetterFlashlightNVSE.dll
+NVSE\Plugins\scripts\ln_betterflashlightnvse-mcm.txt
+NVSE\user_defined_functions\BetterFlashlightNVSE\OnMCMUpdate.gek
+MCM\BetterFlashlightNVSE.json
+config\BetterFlashlightNVSE.ini
+Shaders\BetterFlashlightNVSE\Effects\...
+Textures\Effects\Flashlight.png
+[/font]
+
+No plugin ESP/ESM is required.
+
+[line]
+
+[size=4][b]Usage[/b][/size]
+
+Use the normal Pip-Boy light control. Better Flashlight NVSE reads that light state and renders its own flashlight effect.
+
+Settings are available in MCM:
+
+[list]
+[*][b]Flashlight[/b]: enabled, attach to weapon, cone angle, spot size, near fade, distance, colour, dimmer, intensity, flicker, warm-up.
+[*][b]Volumetric[/b]: master toggle, separate first/third person toggles, strength, anisotropy, height falloff, max distance, and first-person strength/offset tuning.
+[*][b]Surface Lighting[/b]: material lighting toggle, geometry strength, hotspot reduction, normal strength, specular strength.
+[*][b]Battery[/b]: battery toggle, drain/recharge rates, recharge threshold, icon style, position, and scale.
+[/list]
+
+MCM changes apply live. Manual edits to [font=Courier New]config\BetterFlashlightNVSE.ini[/font] require a restart unless your setup dispatches the reload event.
+
+[line]
+
+[size=4][b]Known Limitations[/b][/size]
+
+[list]
+[*]The volumetric beam is a screen-space approximation. It reads best in third person, where the beam can be seen from the side.
+[*]First-person volumetric is intentionally subtler: looking straight down the beam means there is no side view of the shaft, so the effect reads as an in-air glow. Its strength and origin offset are tunable in MCM.
+[*]Material-aware lighting currently targets nearby static geometry. Skinned actors, hands, weapons, and many alpha materials are not part of that pass.
+[*]The old engine-light experiment is disabled by default and kept as an INI-only fallback.
+[*]External INI edits are not live-reloaded by default. Use MCM for live tuning.
+[/list]
+
+[line]
+
+[size=4][b]Compatibility[/b][/size]
+
+This is a hardcoded-address NVSE render plugin for the standard Fallout: New Vegas runtime.
+
+It has its own shader/effect loader and its own depth resolve path. It does not need New Vegas Reloaded.
+
+If New Vegas Reloaded [i]is[/i] installed, Better Flashlight NVSE automatically disables NVR's own flashlight cone so the two do not double up (configurable via [font=Courier New]DisableNVRFlashlight[/font] in the INI). The rest of NVR is untouched, and either load order works.
+
+If JohnnyGuitar NVSE is installed, its viewmodel clip distance setting is respected automatically. It remains optional.
+
+Because this modifies the render path, compatibility depends on what other render hooks are installed. It is designed to avoid fragile HUD per-frame vtable hooks and uses its own render hooks for the effect chain.
+
+[line]
+
+[size=4][b]Troubleshooting[/b][/size]
+
+[b]The menu does not show up[/b]
+[list]
+[*]Make sure MCM Extender and its requirements are installed.
+[*]Make sure [font=Courier New]MCM\BetterFlashlightNVSE.json[/font] exists.
+[*]Make sure [font=Courier New]NVSE\Plugins\scripts\ln_betterflashlightnvse-mcm.txt[/font] exists.
+[/list]
+
+[b]The plugin does not load[/b]
+[list]
+[*]Make sure xNVSE is installed and working.
+[*]Install DirectX End-User Runtimes (June 2010) if [font=Courier New]d3dx9_43.dll[/font] is missing.
+[*]Install the Microsoft Visual C++ 2015-2022 x86 Redistributable if the VC runtime is missing.
+[/list]
+
+[b]Shader changes do not seem to apply[/b]
+[list]
+[*]Clear the generated cache under [font=Courier New]Shaders\BetterFlashlightNVSE\Effects\Cache[/font] if you are manually editing shaders.
+[/list]
+
+[line]
+
+[size=4][b]Uninstallation[/b][/size]
+
+Turn off the flashlight, save, exit the game, and remove the mod.
+
+The mod does not require an ESP and does not add persistent game records.
+
+[line]
+
+[size=4][b]Source[/b][/size]
+
+Full source is published with every release: [url=https://github.com/Into-The-Rough/FlashlightNVSE]github.com/Into-The-Rough/FlashlightNVSE[/url]
+
+[line]
+
+[size=4][b]Credits[/b][/size]
+
+[list]
+[*][b]Alenet and the New Vegas Reloaded / TES Reloaded contributors[/b] - the flashlight technique and effect framework this plugin is derived from. Upstream source: [url=https://github.com/mchaptel/TESReloaded10]github.com/mchaptel/TESReloaded10[/url]
+[*]jazzisparis (JIP LN NVSE) - Pip-Boy light state handling reference
+[*]xNVSE team
+[*]MCM / MCM Extender / UIO authors
+[*]Fallout: New Vegas modding community
+[/list]
+
+Licensed under GPLv3 as an unofficial derivative of TES Reloaded. Please direct support questions here, not to New Vegas Reloaded's channels - they do not support this mod.

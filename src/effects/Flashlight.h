@@ -7,6 +7,7 @@ public:
 		spotLightActive = false;
 		SpotLight = nullptr;
 		EngineLight = nullptr;
+		b42ProjectionActive = false;
 	};
 
 	struct FlashlightSettingsStruct {
@@ -45,6 +46,7 @@ public:
 	NiSpotLight* SpotLight;
 	NiPointLight* EngineLight;
 	bool	spotLightActive;
+	bool	b42ProjectionActive;
 	int		selectedPass;
 
 	void	UpdateConstants();
@@ -55,6 +57,7 @@ public:
 	void	GetFlashlightViewProj();
 	void	UpdateEngineLight(const NiPoint3& Position, const NiMatrix33& Rotation);
 	void	QueueEngineLight();
+	void	PrepareB42OpticsRender();
 	void	DisableEngineLight();
 	void	DestroyEngineLight();
 };

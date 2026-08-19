@@ -10,7 +10,35 @@ namespace MaterialPass {
 	static constexpr UInt32 kRenderTriStripsAlt = 0xE74840;
 	static constexpr UInt32 kSavedStreamCount = 8;
 	static constexpr UInt32 kSavedTextureCount = 2;
-	static constexpr UInt32 kSavedSamplerStateCount = 5;
+	static constexpr UInt32 kSavedVertexConstantCount = 8;
+	static constexpr UInt32 kSavedPixelConstantCount = 7;
+	static constexpr D3DRENDERSTATETYPE kSavedRenderStates[] = {
+		D3DRS_ZENABLE,
+		D3DRS_ZWRITEENABLE,
+		D3DRS_ZFUNC,
+		D3DRS_ALPHABLENDENABLE,
+		D3DRS_SRCBLEND,
+		D3DRS_DESTBLEND,
+		D3DRS_BLENDOP,
+		D3DRS_SEPARATEALPHABLENDENABLE,
+		D3DRS_ALPHATESTENABLE,
+		D3DRS_STENCILENABLE,
+		D3DRS_CULLMODE,
+		D3DRS_COLORWRITEENABLE,
+		D3DRS_FOGENABLE,
+		D3DRS_MULTISAMPLEMASK,
+		D3DRS_SCISSORTESTENABLE,
+		D3DRS_CLIPPLANEENABLE
+	};
+	static constexpr D3DSAMPLERSTATETYPE kSavedSamplerStates[] = {
+		D3DSAMP_ADDRESSU,
+		D3DSAMP_ADDRESSV,
+		D3DSAMP_MAGFILTER,
+		D3DSAMP_MINFILTER,
+		D3DSAMP_MIPFILTER
+	};
+	static constexpr UInt32 kSavedRenderStateCount = sizeof(kSavedRenderStates) / sizeof(kSavedRenderStates[0]);
+	static constexpr UInt32 kSavedSamplerStateCount = sizeof(kSavedSamplerStates) / sizeof(kSavedSamplerStates[0]);
 
 	static const char* kVertexShaderSource =
 		"row_major float4x4 gWorldViewProj : register(c0);\n"
@@ -192,112 +220,113 @@ namespace MaterialPass {
 	};
 
 	struct SavedDeviceState {
-		IDirect3DVertexShader9* vertexShader;
-		IDirect3DPixelShader9* pixelShader;
-		IDirect3DVertexDeclaration9* vertexDeclaration;
-		IDirect3DBaseTexture9* textures[kSavedTextureCount];
+		IDirect3DVertexShader9* deviceVertexShader;
+		IDirect3DVertexShader9* cachedVertexShader;
+		IDirect3DPixelShader9* devicePixelShader;
+		IDirect3DPixelShader9* cachedPixelShader;
+		IDirect3DVertexDeclaration9* deviceVertexDeclaration;
+		IDirect3DVertexDeclaration9* cachedVertexDeclaration;
+		IDirect3DBaseTexture9* deviceTextures[kSavedTextureCount];
+		IDirect3DBaseTexture9* cachedTextures[kSavedTextureCount];
 		IDirect3DIndexBuffer9* indexBuffer;
 		StreamState streams[kSavedStreamCount];
-		DWORD fvf;
-		DWORD renderStates[10];
-		DWORD samplerStates[kSavedTextureCount][kSavedSamplerStateCount];
+		DWORD deviceFVF;
+		DWORD cachedFVF;
+		DWORD deviceRenderStates[kSavedRenderStateCount];
+		DWORD cachedRenderStates[kSavedRenderStateCount];
+		DWORD deviceSamplerStates[kSavedTextureCount][kSavedSamplerStateCount];
+		DWORD cachedSamplerStates[kSavedTextureCount][kSavedSamplerStateCount];
+		float vertexConstants[kSavedVertexConstantCount][4];
+		float pixelConstants[kSavedPixelConstantCount][4];
 
-		void Save(IDirect3DDevice9* apDevice) {
-			vertexShader = nullptr;
-			pixelShader = nullptr;
-			vertexDeclaration = nullptr;
-			indexBuffer = nullptr;
-			fvf = 0;
-			ZeroMemory(textures, sizeof(textures));
-			ZeroMemory(streams, sizeof(streams));
-			ZeroMemory(renderStates, sizeof(renderStates));
-			ZeroMemory(samplerStates, sizeof(samplerStates));
+		void Save(IDirect3DDevice9* apDevice, NiDX9RenderState* apRenderState) {
+			cachedVertexShader = apRenderState->GetVertexShader();
+			cachedPixelShader = apRenderState->GetPixelShader();
+			cachedVertexDeclaration = apRenderState->GetVertexDeclaration();
+			cachedFVF = apRenderState->GetFVF();
+			if (cachedVertexShader) cachedVertexShader->AddRef();
+			if (cachedPixelShader) cachedPixelShader->AddRef();
+			if (cachedVertexDeclaration) cachedVertexDeclaration->AddRef();
 
-			apDevice->GetVertexShader(&vertexShader);
-			apDevice->GetPixelShader(&pixelShader);
-			apDevice->GetVertexDeclaration(&vertexDeclaration);
-			for (UInt32 i = 0; i < kSavedTextureCount; ++i)
-				apDevice->GetTexture(i, &textures[i]);
+			apDevice->GetVertexShader(&deviceVertexShader);
+			apDevice->GetPixelShader(&devicePixelShader);
+			apDevice->GetVertexDeclaration(&deviceVertexDeclaration);
+			apDevice->GetFVF(&deviceFVF);
+			for (UInt32 i = 0; i < kSavedTextureCount; ++i) {
+				cachedTextures[i] = apRenderState->GetTexture(i);
+				if (cachedTextures[i]) cachedTextures[i]->AddRef();
+				apDevice->GetTexture(i, &deviceTextures[i]);
+			}
 			apDevice->GetIndices(&indexBuffer);
-			apDevice->GetFVF(&fvf);
 			for (UInt32 i = 0; i < kSavedStreamCount; ++i)
 				apDevice->GetStreamSource(i, &streams[i].buffer, &streams[i].offset, &streams[i].stride);
 
-			apDevice->GetRenderState(D3DRS_ZENABLE, &renderStates[0]);
-			apDevice->GetRenderState(D3DRS_ZWRITEENABLE, &renderStates[1]);
-			apDevice->GetRenderState(D3DRS_ALPHABLENDENABLE, &renderStates[2]);
-			apDevice->GetRenderState(D3DRS_SRCBLEND, &renderStates[3]);
-			apDevice->GetRenderState(D3DRS_DESTBLEND, &renderStates[4]);
-			apDevice->GetRenderState(D3DRS_ALPHATESTENABLE, &renderStates[5]);
-			apDevice->GetRenderState(D3DRS_STENCILENABLE, &renderStates[6]);
-			apDevice->GetRenderState(D3DRS_CULLMODE, &renderStates[7]);
-			apDevice->GetRenderState(D3DRS_COLORWRITEENABLE, &renderStates[8]);
-			apDevice->GetRenderState(D3DRS_FOGENABLE, &renderStates[9]);
+			for (UInt32 i = 0; i < kSavedRenderStateCount; ++i) {
+				cachedRenderStates[i] = apRenderState->GetRenderState(kSavedRenderStates[i]);
+				apDevice->GetRenderState(kSavedRenderStates[i], &deviceRenderStates[i]);
+			}
 
 			for (UInt32 i = 0; i < kSavedTextureCount; ++i) {
-				apDevice->GetSamplerState(i, D3DSAMP_ADDRESSU, &samplerStates[i][0]);
-				apDevice->GetSamplerState(i, D3DSAMP_ADDRESSV, &samplerStates[i][1]);
-				apDevice->GetSamplerState(i, D3DSAMP_MAGFILTER, &samplerStates[i][2]);
-				apDevice->GetSamplerState(i, D3DSAMP_MINFILTER, &samplerStates[i][3]);
-				apDevice->GetSamplerState(i, D3DSAMP_MIPFILTER, &samplerStates[i][4]);
+				for (UInt32 j = 0; j < kSavedSamplerStateCount; ++j) {
+					cachedSamplerStates[i][j] = apRenderState->GetSamplerState(i, kSavedSamplerStates[j]);
+					apDevice->GetSamplerState(i, kSavedSamplerStates[j], &deviceSamplerStates[i][j]);
+				}
 			}
+
+			apDevice->GetVertexShaderConstantF(0, &vertexConstants[0][0], kSavedVertexConstantCount);
+			apDevice->GetPixelShaderConstantF(0, &pixelConstants[0][0], kSavedPixelConstantCount);
 		}
 
-		void Restore(IDirect3DDevice9* apDevice) {
-			NiDX9RenderState* renderState = TheRenderManager ? TheRenderManager->renderer->renderState : nullptr;
-			if (renderState) {
-				renderState->SetVertexShader(vertexShader, false);
-				renderState->SetPixelShader(pixelShader, false);
-				if (vertexDeclaration)
-					renderState->SetVertexDeclaration(vertexDeclaration, false);
-				else
-					renderState->SetFVF(fvf, false);
-				for (UInt32 i = 0; i < kSavedTextureCount; ++i)
-					renderState->SetTexture(i, textures[i]);
-				renderState->SetRenderState(D3DRS_ZENABLE, renderStates[0], RenderStateArgs);
-				renderState->SetRenderState(D3DRS_ZWRITEENABLE, renderStates[1], RenderStateArgs);
-				renderState->SetRenderState(D3DRS_ALPHABLENDENABLE, renderStates[2], RenderStateArgs);
-				renderState->SetRenderState(D3DRS_SRCBLEND, renderStates[3], RenderStateArgs);
-				renderState->SetRenderState(D3DRS_DESTBLEND, renderStates[4], RenderStateArgs);
-				renderState->SetRenderState(D3DRS_ALPHATESTENABLE, renderStates[5], RenderStateArgs);
-				renderState->SetRenderState(D3DRS_STENCILENABLE, renderStates[6], RenderStateArgs);
-				renderState->SetRenderState(D3DRS_CULLMODE, renderStates[7], RenderStateArgs);
-				renderState->SetRenderState(D3DRS_COLORWRITEENABLE, renderStates[8], RenderStateArgs);
-				renderState->SetRenderState(D3DRS_FOGENABLE, renderStates[9], RenderStateArgs);
-				for (UInt32 i = 0; i < kSavedTextureCount; ++i) {
-					renderState->SetSamplerState(i, D3DSAMP_ADDRESSU, samplerStates[i][0], false);
-					renderState->SetSamplerState(i, D3DSAMP_ADDRESSV, samplerStates[i][1], false);
-					renderState->SetSamplerState(i, D3DSAMP_MAGFILTER, samplerStates[i][2], false);
-					renderState->SetSamplerState(i, D3DSAMP_MINFILTER, samplerStates[i][3], false);
-					renderState->SetSamplerState(i, D3DSAMP_MIPFILTER, samplerStates[i][4], false);
-				}
-			} else {
-				apDevice->SetVertexShader(vertexShader);
-				apDevice->SetPixelShader(pixelShader);
-				if (vertexDeclaration)
-					apDevice->SetVertexDeclaration(vertexDeclaration);
-				else
-					apDevice->SetFVF(fvf);
-				for (UInt32 i = 0; i < kSavedTextureCount; ++i) {
-					apDevice->SetTexture(i, textures[i]);
-					apDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, samplerStates[i][0]);
-					apDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, samplerStates[i][1]);
-					apDevice->SetSamplerState(i, D3DSAMP_MAGFILTER, samplerStates[i][2]);
-					apDevice->SetSamplerState(i, D3DSAMP_MINFILTER, samplerStates[i][3]);
-					apDevice->SetSamplerState(i, D3DSAMP_MIPFILTER, samplerStates[i][4]);
-				}
+		void Restore(IDirect3DDevice9* apDevice, NiDX9RenderState* apRenderState) {
+			apRenderState->SetVertexShader(cachedVertexShader, false);
+			apRenderState->SetPixelShader(cachedPixelShader, false);
+			if (cachedVertexDeclaration)
+				apRenderState->SetVertexDeclaration(cachedVertexDeclaration, false);
+			else if (cachedFVF)
+				apRenderState->SetFVF(cachedFVF, false);
+			for (UInt32 i = 0; i < kSavedTextureCount; ++i)
+				apRenderState->SetTexture(i, cachedTextures[i]);
+
+			for (UInt32 i = 0; i < kSavedRenderStateCount; ++i)
+				apRenderState->SetRenderState(kSavedRenderStates[i], cachedRenderStates[i], RenderStateArgs);
+
+			for (UInt32 i = 0; i < kSavedTextureCount; ++i) {
+				for (UInt32 j = 0; j < kSavedSamplerStateCount; ++j)
+					apRenderState->SetSamplerState(i, kSavedSamplerStates[j], cachedSamplerStates[i][j], false);
+			}
+
+			apDevice->SetVertexShader(deviceVertexShader);
+			apDevice->SetPixelShader(devicePixelShader);
+			if (deviceFVF)
+				apDevice->SetFVF(deviceFVF);
+			else
+				apDevice->SetVertexDeclaration(deviceVertexDeclaration);
+			for (UInt32 i = 0; i < kSavedTextureCount; ++i)
+				apDevice->SetTexture(i, deviceTextures[i]);
+
+			for (UInt32 i = 0; i < kSavedRenderStateCount; ++i)
+				apDevice->SetRenderState(kSavedRenderStates[i], deviceRenderStates[i]);
+
+			for (UInt32 i = 0; i < kSavedTextureCount; ++i) {
+				for (UInt32 j = 0; j < kSavedSamplerStateCount; ++j)
+					apDevice->SetSamplerState(i, kSavedSamplerStates[j], deviceSamplerStates[i][j]);
 			}
 
 			apDevice->SetIndices(indexBuffer);
 			for (UInt32 i = 0; i < kSavedStreamCount; ++i)
 				apDevice->SetStreamSource(i, streams[i].buffer, streams[i].offset, streams[i].stride);
+			apDevice->SetVertexShaderConstantF(0, &vertexConstants[0][0], kSavedVertexConstantCount);
+			apDevice->SetPixelShaderConstantF(0, &pixelConstants[0][0], kSavedPixelConstantCount);
 
-			if (vertexShader) vertexShader->Release();
-			if (pixelShader) pixelShader->Release();
-			if (vertexDeclaration) vertexDeclaration->Release();
+			if (deviceVertexShader) deviceVertexShader->Release();
+			if (cachedVertexShader) cachedVertexShader->Release();
+			if (devicePixelShader) devicePixelShader->Release();
+			if (cachedPixelShader) cachedPixelShader->Release();
+			if (deviceVertexDeclaration) deviceVertexDeclaration->Release();
+			if (cachedVertexDeclaration) cachedVertexDeclaration->Release();
 			for (UInt32 i = 0; i < kSavedTextureCount; ++i) {
-				if (textures[i])
-					textures[i]->Release();
+				if (deviceTextures[i]) deviceTextures[i]->Release();
+				if (cachedTextures[i]) cachedTextures[i]->Release();
 			}
 			if (indexBuffer) indexBuffer->Release();
 			for (UInt32 i = 0; i < kSavedStreamCount; ++i) {
@@ -325,27 +354,6 @@ namespace MaterialPass {
 
 	static bool IsSwitchNode(NiAVObject* apObject) {
 		return apObject && CdeclCall<bool>(0x43B300, kRTTI_NiSwitchNode, apObject);
-	}
-
-	static bool IsLightingShadeType(NiShadeProperty::ShaderPropType aeType) {
-		return aeType == NiShadeProperty::kProp_Lighting ||
-			aeType == NiShadeProperty::kProp_PPLighting ||
-			aeType == NiShadeProperty::kProp_Lighting30 ||
-			aeType == NiShadeProperty::kProp_Hair ||
-			aeType == NiShadeProperty::kProp_SpeedTreeBranch ||
-			aeType == NiShadeProperty::kProp_SpeedTreeLeaf;
-	}
-
-	static bool HasBSShaderFlags(NiShadeProperty::ShaderPropType aeType) {
-		return aeType == NiShadeProperty::kProp_Lighting ||
-			aeType == NiShadeProperty::kProp_PPLighting ||
-			aeType == NiShadeProperty::kProp_Lighting30 ||
-			aeType == NiShadeProperty::kProp_Hair ||
-			aeType == NiShadeProperty::kProp_NoLighting ||
-			aeType == NiShadeProperty::kProp_DistantLOD ||
-			aeType == NiShadeProperty::kProp_TallGrass ||
-			aeType == NiShadeProperty::kProp_SpeedTreeBranch ||
-			aeType == NiShadeProperty::kProp_SpeedTreeLeaf;
 	}
 
 	static NiShadeProperty* GetShadeProperty(NiGeometry* apGeometry) {
@@ -493,50 +501,29 @@ namespace MaterialPass {
 		if (!shade)
 			return;
 
-		const auto shadeType = shade->m_eShaderType;
-		const bool skinned = apGeometry->skinInstance != nullptr;
-
-		if (!HasBSShaderFlags(shadeType))
+		if (shade->m_eShaderType != NiShadeProperty::kProp_PPLighting)
 			return;
 
-		auto* property = static_cast<BSShaderProperty*>(shade);
+		auto* property = static_cast<BSShaderPPLightingProperty*>(shade);
 		const UInt32 flags0 = property->ulFlags[0];
 		const UInt32 flags1 = property->ulFlags[1];
 		const bool specular = (flags0 & BSShaderProperty::Specular) != 0;
-		const bool parallax = (flags0 & (BSShaderProperty::Parallax_Shader | BSShaderProperty::Parallax_Occlusion)) != 0;
 		const bool normalEligible = (flags1 & BSShaderProperty::Skip_Normal_Maps) == 0;
 		const bool modelSpaceNormals = (flags0 & BSShaderProperty::Model_Space_Normals) != 0;
 		const float specularStrength = specular ? GetSpecularScale(apGeometry) : 0.0f;
 		const float specularPower = GetSpecularPower(apGeometry);
-		bool tangentData = false;
-		bool tangentBasis = false;
-		bool normalTexture = false;
-		bool useNormalMap = false;
-		IDirect3DBaseTexture9* normalMap = nullptr;
-		BSShaderPPLightingProperty* ppLighting = nullptr;
-		UInt32 lightCount = 0;
+		IDirect3DBaseTexture9* normalMap = GetTexture(property, 1);
+		const bool useNormalMap = normalEligible && !modelSpaceNormals && HasTangentBasis(apGeometry) && normalMap;
 
-
-		if (shadeType == NiShadeProperty::kProp_PPLighting) {
-			ppLighting = static_cast<BSShaderPPLightingProperty*>(property);
-			tangentData = ppLighting->spTangentSpaceData != nullptr;
-			tangentBasis = HasTangentBasis(apGeometry);
-			normalMap = GetTexture(ppLighting, 1);
-			normalTexture = normalMap != nullptr;
-			useNormalMap = normalEligible && !modelSpaceNormals && tangentBasis && normalTexture;
-		}
-
-		QueueGeometry(apGeometry, ppLighting, normalMap, specular, specularStrength, specularPower, useNormalMap);
+		QueueGeometry(apGeometry, property, normalMap, specular, specularStrength, specularPower, useNormalMap);
 	}
 
-	static void CaptureObject(NiAVObject* apObject) {
+	static void CaptureObject(NiAVObject* apObject, bool abCheckBound) {
 		if (!apObject || !*(void**)apObject)
 			return;
 		if (apObject->m_flags & NiAVObject::APP_CULLED)
 			return;
-		//world bounds enclose children, so this prunes whole subtrees outside the
-		//beam before any RTTI or property work
-		if (!IsWithinLight(apObject))
+		if (abCheckBound && !IsWithinLight(apObject))
 			return;
 
 		if (IsGeometry(apObject)) {
@@ -557,19 +544,20 @@ namespace MaterialPass {
 				return;
 			UInt32 index = (UInt32)switchNode->m_iIndex;
 			if (index < node->m_children.numObjs)
-				CaptureObject(node->m_children.data[index]);
+				CaptureObject(node->m_children.data[index], true);
 			return;
 		}
 
 		for (UInt32 i = 0; i < node->m_children.numObjs; ++i)
-			CaptureObject(node->m_children.data[i]);
+			CaptureObject(node->m_children.data[i], true);
 	}
 
 	void CaptureScene(SceneGraph* apSceneGraph) {
 		if (!g_renderActive || !apSceneGraph)
 			return;
 
-		CaptureObject(apSceneGraph);
+		//scene root bound doesn't cover its children
+		CaptureObject(apSceneGraph, false);
 	}
 
 	void BeginFrame(bool abActive) {
@@ -644,28 +632,51 @@ namespace MaterialPass {
 	}
 
 	static void ApplyRenderState() {
-		NiDX9RenderState* renderState = TheRenderManager->renderer->renderState;
+		NiDX9Renderer* renderer = TheRenderManager->renderer;
+		NiDX9RenderState* renderState = renderer->renderState;
+		IDirect3DDevice9* device = renderer->device;
+		auto setState = [renderState, device](D3DRENDERSTATETYPE aeState, DWORD auiValue) {
+			renderState->SetRenderState(aeState, auiValue, RenderStateArgs);
+			device->SetRenderState(aeState, auiValue);
+		};
+		auto setSampler = [renderState, device](UInt32 auiSampler, D3DSAMPLERSTATETYPE aeState, DWORD auiValue) {
+			renderState->SetSamplerState(auiSampler, aeState, auiValue, false);
+			device->SetSamplerState(auiSampler, aeState, auiValue);
+		};
+
 		renderState->SetVertexShader(g_vertexShader, false);
 		renderState->SetPixelShader(g_pixelShader, false);
-		renderState->SetRenderState(D3DRS_ZENABLE, D3DZB_TRUE, RenderStateArgs);
-		renderState->SetRenderState(D3DRS_ZWRITEENABLE, D3DZB_FALSE, RenderStateArgs);
-		renderState->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE, RenderStateArgs);
-		renderState->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE, RenderStateArgs);
-		renderState->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE, RenderStateArgs);
-		renderState->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE, RenderStateArgs);
-		renderState->SetRenderState(D3DRS_STENCILENABLE, FALSE, RenderStateArgs);
-		renderState->SetRenderState(D3DRS_COLORWRITEENABLE, 15, RenderStateArgs);
-		renderState->SetRenderState(D3DRS_FOGENABLE, FALSE, RenderStateArgs);
-		renderState->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP, false);
-		renderState->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP, false);
-		renderState->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR, false);
-		renderState->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR, false);
-		renderState->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR, false);
-		renderState->SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP, false);
-		renderState->SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP, false);
-		renderState->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR, false);
-		renderState->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR, false);
-		renderState->SetSamplerState(1, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR, false);
+		device->SetVertexShader(g_vertexShader);
+		device->SetPixelShader(g_pixelShader);
+		for (UInt32 i = 0; i < kSavedTextureCount; ++i) {
+			renderState->SetTexture(i, nullptr);
+			device->SetTexture(i, nullptr);
+		}
+
+		setState(D3DRS_ZENABLE, D3DZB_TRUE);
+		setState(D3DRS_ZWRITEENABLE, D3DZB_FALSE);
+		setState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+		setState(D3DRS_ALPHABLENDENABLE, TRUE);
+		setState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+		setState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		setState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
+		setState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+		setState(D3DRS_ALPHATESTENABLE, FALSE);
+		setState(D3DRS_STENCILENABLE, FALSE);
+		setState(D3DRS_COLORWRITEENABLE,
+			D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
+		setState(D3DRS_FOGENABLE, FALSE);
+		setState(D3DRS_MULTISAMPLEMASK, 0xFFFFFFFF);
+		setState(D3DRS_SCISSORTESTENABLE, FALSE);
+		setState(D3DRS_CLIPPLANEENABLE, 0);
+
+		for (UInt32 i = 0; i < kSavedTextureCount; ++i) {
+			setSampler(i, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
+			setSampler(i, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
+			setSampler(i, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+			setSampler(i, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+			setSampler(i, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+		}
 	}
 
 	static void SetCullMode(NiGeometry* apGeometry) {
@@ -674,6 +685,8 @@ namespace MaterialPass {
 			TheRenderManager->renderer->renderState->SetCullMode(stencil->GetDrawMode());
 		else
 			TheRenderManager->renderer->renderState->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW, RenderStateArgs);
+		TheRenderManager->renderer->device->SetRenderState(D3DRS_CULLMODE,
+			TheRenderManager->renderer->renderState->GetRenderState(D3DRS_CULLMODE));
 	}
 
 	static bool DrawGeometryBuffer(NiGeometry* apGeometry) {
@@ -694,10 +707,14 @@ namespace MaterialPass {
 
 		if (data->IB)
 			device->SetIndices(data->IB);
-		if (data->FVF)
+		if (data->FVF) {
 			TheRenderManager->renderer->renderState->SetFVF(data->FVF, false);
-		else if (data->VertexDeclaration)
+			device->SetFVF(data->FVF);
+		}
+		else if (data->VertexDeclaration) {
 			TheRenderManager->renderer->renderState->SetVertexDeclaration(data->VertexDeclaration, false);
+			device->SetVertexDeclaration(data->VertexDeclaration);
+		}
 		else
 			return false;
 
@@ -718,8 +735,9 @@ namespace MaterialPass {
 		if (!EnsureShaders(device))
 			return;
 
+		NiDX9RenderState* renderState = TheRenderManager->renderer->renderState;
 		SavedDeviceState saved{};
-		saved.Save(device);
+		saved.Save(device, renderState);
 		ApplyRenderState();
 
 		D3DXVECTOR4 lightPos = TheShaderManager->SpotLightPosition[0];
@@ -771,7 +789,7 @@ namespace MaterialPass {
 			DrawGeometryBuffer(item.geometry);
 		}
 
-		saved.Restore(device);
+		saved.Restore(device, renderState);
 	}
 
 	void InitHooks() {}

@@ -8,6 +8,8 @@ void (__thiscall* Render)(Main*, BSRenderedTexture*, int, int) =
 	(void (__thiscall*)(Main*, BSRenderedTexture*, int, int))Hooks::Render;
 void __fastcall RenderHook(Main* This, UInt32 edx, BSRenderedTexture* RenderedTexture, int Arg2, int Arg3) {
 	FlashlightEffect* flashlight = TheShaderManager ? TheShaderManager->Effects.Flashlight : nullptr;
+	if (flashlight)
+		flashlight->PrepareB42OpticsRender();
 	if (TheRenderManager && TheShaderManager && Player && Player->parentCell &&
 		Config::Main.RenderEffects && TheShaderManager->DeviceReady && flashlight && flashlight->Enabled) {
 		TheRenderManager->UpdateSceneCameraData();
@@ -92,6 +94,7 @@ void __cdecl ProcessImageSpaceShadersHook(NiDX9Renderer* Renderer, BSRenderedTex
 	if (!Player || !Player->parentCell)          { ProcessImageSpaceShaders(Renderer, SourceTarget, DestinationTarget); return; }
 	if (!TheShaderManager->DeviceReady)          { ProcessImageSpaceShaders(Renderer, SourceTarget, DestinationTarget); return; }
 	if (!TheShaderManager->Effects.Flashlight->Enabled) { ProcessImageSpaceShaders(Renderer, SourceTarget, DestinationTarget); return; }
+	if (TheShaderManager->Effects.Flashlight->b42ProjectionActive) { ProcessImageSpaceShaders(Renderer, SourceTarget, DestinationTarget); return; }
 	//pipboy is rendered as a near-camera mesh into the same target. our cone
 	//math illuminates it because we forced viewmodel into the depth buffer.
 	//easiest fix: skip the entire effect chain while the pipboy menu is up.
