@@ -1,6 +1,8 @@
 #include "Flashlight.h"
 #include "../core/Config.h"
 
+constexpr UInt32 kVtbl_LightEffect = 0x107A2CC;
+
 static void SetVanillaPipboyLightCulled(bool abCulled);
 static constexpr UInt32 kBSUtilities_GetObjectByName = 0x4AAE30;
 
@@ -51,18 +53,29 @@ void FlashlightEffect::UpdateSettings() {
 		SetVanillaPipboyLightCulled(false);
 };
 
-//the magic system attaches the vanilla pip-boy NiPointLight to the player root,
-//our cone replaces it visually so it stays culled while the cone draws
+static MagicItem* GetPipBoyLightItem() {
+	return (MagicItem*)(ThisStdCall<uint8_t*>(0x93CCD0, NULL) + 0x18);
+}
+
+//the pip-boy light belongs to a LightEffect on the player's magic target, which owns the
+//NiPointLight itself. matching on RTTI instead culls every point light parented to the
+//player, including ones other mods attach - that blanked Realtime Pip-Boy Map's screen.
 static void SetVanillaPipboyLightCulled(bool abCulled) {
-	NiNode* playerNode = Player ? Player->GetNode() : nullptr;
-	if (!playerNode) return;
-	for (UInt32 i = 0; i < playerNode->m_children.numObjs; i++) {
-		NiAVObject* child = playerNode->m_children.data[i];
-		if (!child || child->GetRTTI() != (void*)0x11F4A98) continue; //NiPointLight
+	if (!Player) return;
+	MagicItem* pipboyLight = GetPipBoyLightItem();
+	if (!pipboyLight) return;
+
+	struct EffectNode { void* effect; EffectNode* next; };
+	for (EffectNode* node = (EffectNode*)Player->magicTarget.GetEffectList(); node; node = node->next) {
+		uint8_t* effect = (uint8_t*)node->effect;
+		if (!effect || *(void**)effect != (void*)kVtbl_LightEffect) continue;
+		if (*(MagicItem**)(effect + 0x08) != pipboyLight) continue; //0x08 magic item
+		NiAVObject* light = *(NiAVObject**)(effect + 0x48); //0x48 the light the effect owns
+		if (!light) continue;
 		if (abCulled)
-			child->m_flags |= NiAVObject::APP_CULLED;
+			light->m_flags |= NiAVObject::APP_CULLED;
 		else
-			child->m_flags &= ~NiAVObject::APP_CULLED;
+			light->m_flags &= ~NiAVObject::APP_CULLED;
 	}
 }
 
@@ -71,7 +84,7 @@ void FlashlightEffect::UpdateConstants() {
 	if (!SpotLight) return;
 
 	// based on JIP https://github.com/jazzisparis/JIP-LN-NVSE/blob/5a30ac4356ea0e93b9ff357b5031b1e420240a4d/functions_jip/jip_fn_ui.h#L1469
-	UInt32 lightIsOn = ThisStdCall<bool>(0x822B90, &Player->magicTarget, (void*)&(*(MagicItem**)(ThisStdCall<uint8_t*>(0x93CCD0, NULL) + 0x18)), 1);
+	UInt32 lightIsOn = ThisStdCall<bool>(0x822B90, &Player->magicTarget, GetPipBoyLightItem(), 1);
 
 	spotLightActive = Enabled && lightIsOn && !b42ProjectionActive;
 	if (!spotLightActive) {
