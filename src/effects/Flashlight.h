@@ -12,8 +12,6 @@ public:
 
 	struct FlashlightSettingsStruct {
 		NiColor		Color;
-		float		Dimmer;
-		float		Intensity;
 		float		SpotSize;
 		float		NearFade;
 		float		HotspotLimit;
@@ -55,9 +53,10 @@ public:
 	bool	ShouldRender();
 
 	void	GetFlashlightViewProj();
-	void	UpdateEngineLight(const NiPoint3& Position, const NiMatrix33& Rotation);
+	void	UpdateEngineLight(const NiPoint3& Position, const NiMatrix33& Rotation, float afDimmer);
 	void	QueueEngineLight();
 	void	PrepareB42OpticsRender();
+	void	SetB42ProjectionActive(bool abActive);
 	void	DisableEngineLight();
 	void	DestroyEngineLight();
 };

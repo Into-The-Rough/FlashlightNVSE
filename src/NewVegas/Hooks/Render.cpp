@@ -25,6 +25,19 @@ void __fastcall RenderHook(Main* This, UInt32 edx, BSRenderedTexture* RenderedTe
 	(*Render)(This, RenderedTexture, Arg2, Arg3);
 }
 
+void (__cdecl* RenderCamera)(NiCamera*, void*, void*) =
+	(void (__cdecl*)(NiCamera*, void*, void*))0x00B6BEE0;
+void __cdecl RenderCameraHook(NiCamera* Camera, void* Scene, void* CullingProcess) {
+	FlashlightEffect* flashlight = TheShaderManager ? TheShaderManager->Effects.Flashlight : nullptr;
+	bool b42Camera = Camera && Camera->m_pcName && strcmp(Camera->m_pcName, "ISCM") == 0;
+	bool wasActive = flashlight && flashlight->b42ProjectionActive;
+	if (b42Camera && flashlight && flashlight->Enabled)
+		flashlight->SetB42ProjectionActive(true);
+	RenderCamera(Camera, Scene, CullingProcess);
+	if (b42Camera && flashlight && flashlight->Enabled)
+		flashlight->SetB42ProjectionActive(wasActive);
+}
+
 void(__cdecl* ProcessImageSpaceShaders)(NiDX9Renderer*, BSRenderedTexture*, BSRenderedTexture*) =
 	(void(__cdecl*)(NiDX9Renderer*, BSRenderedTexture*, BSRenderedTexture*))Hooks::ProcessImageSpaceShaders;
 
@@ -38,7 +51,9 @@ void (__thiscall* RenderWorldSceneGraph)(Main*, Sun*, UInt8, UInt8, UInt8) =
 void __fastcall RenderWorldSceneGraphHook(Main* This, UInt32 edx, Sun* SkySun, UInt8 IsFirstPerson, UInt8 WireFrame, UInt8 Arg4) {
 	(*RenderWorldSceneGraph)(This, SkySun, IsFirstPerson, WireFrame, Arg4);
 
-	if (TheRenderManager && TheTextureManager && WorldSceneGraph) {
+	FlashlightEffect* flashlight = TheShaderManager ? TheShaderManager->Effects.Flashlight : nullptr;
+	if (TheRenderManager && TheTextureManager && WorldSceneGraph &&
+		(!flashlight || !flashlight->b42ProjectionActive)) {
 		MaterialPass::CaptureScene(WorldSceneGraph);
 		MaterialPass::RenderWorld();
 	}

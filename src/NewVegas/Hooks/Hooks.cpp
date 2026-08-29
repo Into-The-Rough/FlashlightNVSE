@@ -44,6 +44,7 @@ void AttachHooks() {
 	//frame-start hook - set up scene camera + constants before the world renders,
 	//while WorldSceneGraph->camera is the real view camera (NVR does this in Render)
 	DetourAttach(&(PVOID&)Render, &RenderHook);
+	DetourAttach(&(PVOID&)RenderCamera, &RenderCameraHook);
 
 	//main frame hook - runs our effect chain before vanilla post-process
 	DetourAttach(&(PVOID&)ProcessImageSpaceShaders, &ProcessImageSpaceShadersHook);

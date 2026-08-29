@@ -5,8 +5,6 @@ namespace Config {
 		float ColorR;
 		float ColorG;
 		float ColorB;
-		float Dimmer;
-		float Intensity;
 		float SpotSize;
 		float NearFade;
 		float HotspotLimit;
@@ -38,6 +36,7 @@ namespace Config {
 		float MaterialLightNormalStrength;
 		int MaterialLightMaxGeometry;
 		int MaterialLightDebugMode;
+		bool MaterialLightLogProjection;
 		bool VolumetricEnabled;
 		bool VolumetricFirstPerson;
 		bool VolumetricThirdPerson;
@@ -48,6 +47,18 @@ namespace Config {
 		float VolumetricFirstPersonStrength;
 		float VolumetricFPOffsetRight;
 		float VolumetricFPOffsetDown;
+	};
+
+	struct BrightnessSettings {
+		float Dimmer;
+		float Intensity;
+	};
+
+	struct HotkeySettings {
+		int DimmerIncrease;
+		int DimmerDecrease;
+		int IntensityIncrease;
+		int IntensityDecrease;
 	};
 
 	struct MainSettings {
@@ -67,9 +78,14 @@ namespace Config {
 	};
 
 	extern FlashlightSettings Flashlight;
+	extern BrightnessSettings Interior;
+	extern BrightnessSettings Exterior;
+	extern HotkeySettings Hotkeys;
 	extern MainSettings Main;
 	extern BatterySettings Battery;
 
 	void Load();
 	void Reload();
+	void AdjustDimmer(bool abInterior, float afAmount);
+	void AdjustIntensity(bool abInterior, float afAmount);
 }

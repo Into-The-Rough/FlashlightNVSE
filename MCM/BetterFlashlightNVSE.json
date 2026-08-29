@@ -30,7 +30,7 @@
 					"mouse": "Light follows the weapon when armed, otherwise the camera.",
 					"vars": [{ "configINI": "Flashlight:AttachToWeapon", "default": 1 }]
 				},
-				"15": {
+				"18": {
 					"title": "Soften Foliage Edges",
 					"type": 5,
 					"enable": 1,
@@ -53,7 +53,7 @@
 					"vars": [{ "configINI": "Flashlight:SpotSize", "default": 1.5 }],
 					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.1, "valueMax": 1.5 }
 				},
-				"14": {
+				"17": {
 					"title": "Near Fade",
 					"type": 2.5,
 					"enable": 1,
@@ -99,19 +99,45 @@
 					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 3.0 }
 				},
 				"10": {
-					"title": "Dimmer",
-					"type": 2.5,
-					"enable": 1,
-					"mouse": "Overall colour brightness multiplier.",
-					"vars": [{ "configINI": "Flashlight:Dimmer", "default": 1.0 }],
-					"scale": { "valueDecimal": 2, "valueIncrement": 0.1, "valueMin": 0.0, "valueMax": 5.0 }
+					"title": "Interior Brightness",
+					"type": 0,
+					"enable": 1
 				},
 				"11": {
-					"title": "Intensity",
+					"title": "Interior Dimmer",
 					"type": 2.5,
 					"enable": 1,
-					"mouse": "Beam brightness on surfaces (pre-tonemapping). Lower = subtler.",
-					"vars": [{ "configINI": "Flashlight:Intensity", "default": 0.35 }],
+					"mouse": "Overall colour brightness multiplier used in interior cells.",
+					"vars": [{ "configINI": "Interior:Dimmer", "default": 1.0 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.1, "valueMin": 0.0, "valueMax": 5.0 }
+				},
+				"12": {
+					"title": "Interior Intensity",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Beam brightness on surfaces in interior cells.",
+					"vars": [{ "configINI": "Interior:Intensity", "default": 0.35 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 1.0 }
+				},
+				"13": {
+					"title": "Exterior Brightness",
+					"type": 0,
+					"enable": 1
+				},
+				"14": {
+					"title": "Exterior Dimmer",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Overall colour brightness multiplier used in exterior cells.",
+					"vars": [{ "configINI": "Exterior:Dimmer", "default": 1.0 }],
+					"scale": { "valueDecimal": 2, "valueIncrement": 0.1, "valueMin": 0.0, "valueMax": 5.0 }
+				},
+				"15": {
+					"title": "Exterior Intensity",
+					"type": 2.5,
+					"enable": 1,
+					"mouse": "Beam brightness on surfaces in exterior cells.",
+					"vars": [{ "configINI": "Exterior:Intensity", "default": 0.35 }],
 					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 1.0 }
 				},
 				"16": {
@@ -122,7 +148,7 @@
 					"vars": [{ "configINI": "Flashlight:CookieStrength", "default": 0.25 }],
 					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 1.0 }
 				},
-				"12": {
+				"19": {
 					"title": "Flicker",
 					"type": 2.5,
 					"enable": 1,
@@ -130,7 +156,7 @@
 					"vars": [{ "configINI": "Flashlight:Flicker", "default": 0.25 }],
 					"scale": { "valueDecimal": 2, "valueIncrement": 0.05, "valueMin": 0.0, "valueMax": 1.0 }
 				},
-				"13": {
+				"20": {
 					"title": "Warm-Up Time",
 					"type": 2.5,
 					"enable": 1,
@@ -355,6 +381,42 @@
 					"mouse": "Battery icon size multiplier.",
 					"vars": [{ "configINI": "Battery:IconScale", "default": 0.6 }],
 					"scale": { "valueDecimal": 2, "valueIncrement": 0.1, "valueMin": 0.1, "valueMax": 3.0 }
+				}
+			}
+		},
+		"5": {
+			"listTitle": "Hotkeys",
+			"pageTitle": "Brightness Hotkeys",
+			"columns": 1,
+			"enable": 1,
+			"options": {
+				"1": {
+					"title": "Increase Dimmer",
+					"type": 3,
+					"enable": 1,
+					"mouse": "Raises dimmer for the current interior or exterior profile.",
+					"vars": [{ "configINI": "Hotkeys:DimmerIncrease", "default": 78 }]
+				},
+				"2": {
+					"title": "Decrease Dimmer",
+					"type": 3,
+					"enable": 1,
+					"mouse": "Lowers dimmer for the current interior or exterior profile.",
+					"vars": [{ "configINI": "Hotkeys:DimmerDecrease", "default": 74 }]
+				},
+				"3": {
+					"title": "Increase Intensity",
+					"type": 3,
+					"enable": 1,
+					"mouse": "Raises intensity for the current interior or exterior profile.",
+					"vars": [{ "configINI": "Hotkeys:IntensityIncrease", "default": 55 }]
+				},
+				"4": {
+					"title": "Decrease Intensity",
+					"type": 3,
+					"enable": 1,
+					"mouse": "Lowers intensity for the current interior or exterior profile.",
+					"vars": [{ "configINI": "Hotkeys:IntensityDecrease", "default": 181 }]
 				}
 			}
 		}

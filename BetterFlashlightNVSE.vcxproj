@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|Win32">
@@ -110,6 +110,7 @@ if exist "$(TargetDir)$(TargetName).pdb" copy /Y "$(TargetDir)$(TargetName).pdb"
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="src\base\PluginVersion.cpp" />
+    <ClCompile Include="src\base\Log.cpp" />
     <ClCompile Include="src\base\SafeWrite.cpp" />
     <ClCompile Include="src\core\Config.cpp" />
     <ClCompile Include="src\core\FlashlightBridge.cpp" />
@@ -125,6 +126,7 @@ if exist "$(TargetDir)$(TargetName).pdb" copy /Y "$(TargetDir)$(TargetName).pdb"
     <ClCompile Include="src\effects\Normals.cpp" />
     <ClCompile Include="src\effects\Volumetric.cpp" />
     <ClCompile Include="src\features\Battery.cpp" />
+    <ClCompile Include="src\features\BrightnessHotkeys.cpp" />
     <ClCompile Include="src\NewVegas\Managers.cpp" />
     <ClCompile Include="src\NewVegas\nvse\GameNi.cpp" />
     <ClCompile Include="src\NewVegas\Hooks\Game.cpp" />
@@ -137,6 +139,7 @@ if exist "$(TargetDir)$(TargetName).pdb" copy /Y "$(TargetDir)$(TargetName).pdb"
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\base\PluginVersion.h" />
+    <ClInclude Include="src\base\Log.h" />
     <ClInclude Include="src\base\SafeWrite.h" />
     <ClInclude Include="src\base\Types.h" />
     <ClInclude Include="src\base\Utils.h" />
@@ -154,6 +157,7 @@ if exist "$(TargetDir)$(TargetName).pdb" copy /Y "$(TargetDir)$(TargetName).pdb"
     <ClInclude Include="src\effects\Normals.h" />
     <ClInclude Include="src\effects\Volumetric.h" />
     <ClInclude Include="src\features\Battery.h" />
+    <ClInclude Include="src\features\BrightnessHotkeys.h" />
     <ClInclude Include="src\NewVegas\Base.h" />
     <ClInclude Include="src\NewVegas\Defines.h" />
     <ClInclude Include="src\NewVegas\Framework.h" />
@@ -162,6 +166,7 @@ if exist "$(TargetDir)$(TargetName).pdb" copy /Y "$(TargetDir)$(TargetName).pdb"
     <ClInclude Include="src\NewVegas\nvse\Game.h" />
     <ClInclude Include="src\NewVegas\nvse\GameHavok.h" />
     <ClInclude Include="src\NewVegas\nvse\GameNi.h" />
+    <ClInclude Include="src\NewVegas\nvse\GameOSDepend.h" />
     <ClInclude Include="src\NewVegas\nvse\class_vtbls.h" />
     <ClInclude Include="src\NewVegas\Hooks\Game.h" />
     <ClInclude Include="src\NewVegas\Hooks\Hooks.h" />

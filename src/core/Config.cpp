@@ -2,6 +2,9 @@
 
 namespace Config {
 	FlashlightSettings Flashlight{};
+	BrightnessSettings Interior{};
+	BrightnessSettings Exterior{};
+	HotkeySettings Hotkeys{};
 	MainSettings Main{};
 	BatterySettings Battery{};
 
@@ -30,12 +33,22 @@ namespace Config {
 		return GetI(section, key, fallback ? 1 : 0) != 0;
 	}
 
+	static void SetF(const char* section, const char* key, float value) {
+		char buf[32];
+		sprintf_s(buf, "%.2f", value);
+		WritePrivateProfileStringA(section, key, buf, IniPath);
+	}
+
 	void Load() {
 		Flashlight.ColorR         = GetF("Flashlight", "ColorR",         2.0f);
 		Flashlight.ColorG         = GetF("Flashlight", "ColorG",         1.85f);
 		Flashlight.ColorB         = GetF("Flashlight", "ColorB",         1.65f);
-		Flashlight.Dimmer         = GetF("Flashlight", "Dimmer",         1.0f);
-		Flashlight.Intensity      = GetF("Flashlight", "Intensity",      0.35f);
+		float legacyDimmer        = GetF("Flashlight", "Dimmer",         1.0f);
+		float legacyIntensity     = GetF("Flashlight", "Intensity",      0.35f);
+		Interior.Dimmer           = GetF("Interior", "Dimmer",           legacyDimmer);
+		Interior.Intensity        = GetF("Interior", "Intensity",        legacyIntensity);
+		Exterior.Dimmer           = GetF("Exterior", "Dimmer",           legacyDimmer);
+		Exterior.Intensity        = GetF("Exterior", "Intensity",        legacyIntensity);
 		Flashlight.SpotSize       = GetF("Flashlight", "SpotSize",       1.5f);
 		Flashlight.NearFade       = GetF("Flashlight", "NearFade",       150.0f);
 		Flashlight.HotspotLimit   = GetF("Flashlight", "HotspotLimit",   1.0f);
@@ -69,6 +82,7 @@ namespace Config {
 		Flashlight.MaterialLightNormalStrength = GetF("MaterialLight", "NormalStrength", 2.5f);
 		Flashlight.MaterialLightMaxGeometry = GetI("MaterialLight", "MaxGeometry", 2048);
 		Flashlight.MaterialLightDebugMode   = GetI("MaterialLight", "DebugMode",   0);
+		Flashlight.MaterialLightLogProjection = GetB("MaterialLight", "LogProjection", false);
 
 		Flashlight.VolumetricEnabled       = GetB("Volumetric", "Enabled",       true);
 		Flashlight.VolumetricFirstPerson   = GetB("Volumetric", "FirstPersonEnabled", true);
@@ -80,6 +94,11 @@ namespace Config {
 		Flashlight.VolumetricFirstPersonStrength = GetF("Volumetric", "FirstPersonStrength", 0.15f);
 		Flashlight.VolumetricFPOffsetRight = GetF("Volumetric", "FirstPersonOffsetRight", 8.0f);
 		Flashlight.VolumetricFPOffsetDown  = GetF("Volumetric", "FirstPersonOffsetDown",  4.0f);
+
+		Hotkeys.DimmerIncrease    = GetI("Hotkeys", "DimmerIncrease",    DIK_ADD);
+		Hotkeys.DimmerDecrease    = GetI("Hotkeys", "DimmerDecrease",    DIK_SUBTRACT);
+		Hotkeys.IntensityIncrease = GetI("Hotkeys", "IntensityIncrease", DIK_MULTIPLY);
+		Hotkeys.IntensityDecrease = GetI("Hotkeys", "IntensityDecrease", DIK_DIVIDE);
 
 		Battery.Enabled           = GetB("Battery", "Enabled",           true);
 		Battery.DrainRate         = GetF("Battery", "DrainRate",         2.0f);
@@ -95,4 +114,16 @@ namespace Config {
 	}
 
 	void Reload() { Load(); }
+
+	void AdjustDimmer(bool abInterior, float afAmount) {
+		auto& profile = abInterior ? Interior : Exterior;
+		profile.Dimmer = std::clamp(profile.Dimmer + afAmount, 0.0f, 5.0f);
+		SetF(abInterior ? "Interior" : "Exterior", "Dimmer", profile.Dimmer);
+	}
+
+	void AdjustIntensity(bool abInterior, float afAmount) {
+		auto& profile = abInterior ? Interior : Exterior;
+		profile.Intensity = std::clamp(profile.Intensity + afAmount, 0.0f, 1.0f);
+		SetF(abInterior ? "Interior" : "Exterior", "Intensity", profile.Intensity);
+	}
 }

@@ -2,6 +2,7 @@
 #include "src/core/Config.h"
 #include "src/core/FlashlightBridge.h"
 #include "src/features/Battery.h"
+#include "src/features/BrightnessHotkeys.h"
 
 static PluginHandle g_pluginHandle = 0xFFFFFFFF;
 static NVSEMessagingInterface* g_messaging = nullptr;
@@ -53,6 +54,7 @@ static void MessageHandler(NVSEMessagingInterface::Message* msg) {
 		break;
 	case NVSEMessagingInterface::kMessage_MainGameLoop:
 		Battery::MainLoop();
+		BrightnessHotkeys::MainLoop();
 		break;
 	case NVSEMessagingInterface::kMessage_PostLoad:
 		//all plugins are loaded now - safe to look for NewVegasReloaded.dll and flag its
@@ -75,6 +77,8 @@ __declspec(dllexport) bool NVSEPlugin_Query(const PluginInterface* Interface, Pl
 }
 
 __declspec(dllexport) bool NVSEPlugin_Load(const PluginInterface* Interface) {
+	LogOpen("BetterFlashlightNVSE.log");
+	Log("BetterFlashlightNVSE build %s %s", __DATE__, __TIME__);
 	Config::Load();
 
 	if (!Interface->IsEditor) {

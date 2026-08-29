@@ -67,6 +67,19 @@ void EffectRecord::DisposeEffect() {
 	Enabled = false;
 }
 
+//D3DX error buffers are not reliably NUL terminated and usually carry trailing padding
+static void LogShaderErrors(const char* apStage, const char* apName, ID3DXBuffer* apErrors) {
+	if (!apErrors || !apErrors->GetBufferPointer()) {
+		Log("[shader] %s failed for %s (no compiler output)", apStage, apName);
+		return;
+	}
+	const char* text = (const char*)apErrors->GetBufferPointer();
+	int length = (int)apErrors->GetBufferSize();
+	while (length > 0 && (text[length - 1] == '\0' || text[length - 1] == '\n' || text[length - 1] == '\r'))
+		--length;
+	Log("[shader] %s failed for %s: %.*s", apStage, apName, length, text);
+}
+
 /*
  * Compile and Load the Effect shader
  */
@@ -95,6 +108,7 @@ bool EffectRecord::LoadEffect() {
 	strcat(EffectSourcePath, ".fx.hlsl");
 
 	if (!FileExists(EffectSourcePath)) {
+		Log("[shader] source missing for %s at %s", Name, EffectSourcePath);
 		return success;
 	}
 
@@ -107,6 +121,8 @@ bool EffectRecord::LoadEffect() {
 	strcat(EffectCompiledPath, ".fx");
 
 	HRESULT prepass = D3DXPreprocessShaderFromFileA(EffectSourcePath, NULL, NULL, &EffectSource, &Errors);
+	if (prepass != D3D_OK)
+		LogShaderErrors("preprocess", Name, Errors);
 	if (prepass == D3D_OK) {
 		bool Compile = !CheckPreprocessResult(EffectPreprocessedPath, EffectSource);
 		bool CompiledExists = FileExists(EffectCompiledPath);
@@ -114,11 +130,14 @@ bool EffectRecord::LoadEffect() {
 		if (!Compile && CompiledExists) {
 			HRESULT loaded = D3DXCreateEffectFromFileA(TheRenderManager->renderer->device, EffectCompiledPath, NULL, NULL, D3DXFX_LARGEADDRESSAWARE, NULL, &Effect, &Errors);
 			if (FAILED(loaded)) {
+				//stale or mismatched cache, the compile branch below rebuilds it
+				LogShaderErrors("cached load", Name, Errors);
 				if (Effect) { Effect->Release(); Effect = NULL; }
 				if (Errors) { Errors->Release(); Errors = NULL; }
 			}
-
-			success = true;
+			else {
+				success = true;
+			}
 		}
 
 		if (Compile || !CompiledExists || !Effect) {
@@ -133,22 +152,24 @@ bool EffectRecord::LoadEffect() {
 				&Errors
 			);
 			if (FAILED(compiled)) {
+				LogShaderErrors("compiler creation", Name, Errors);
 				if (Compiler) Compiler->Release();
 				if (EffectSource) EffectSource->Release();
 				if (Effect) Effect->Release();
 				if (Errors) Errors->Release();
 				Enabled = false;
-				return success;
+				return false;
 			}
 
 			compiled = Compiler->CompileEffect(NULL, &EffectBuffer, &Errors);
 			if (FAILED(compiled)) {
+				LogShaderErrors("compile", Name, Errors);
 				if (Compiler) Compiler->Release();
 				if (EffectSource) EffectSource->Release();
 				if (Effect) Effect->Release();
 				if (Errors) Errors->Release();
 				Enabled = false;
-				return success;
+				return false;
 			}
 
 			if (EffectBuffer) {
@@ -165,13 +186,14 @@ bool EffectRecord::LoadEffect() {
 
 			HRESULT loaded = D3DXCreateEffectFromFileA(TheRenderManager->renderer->device, EffectCompiledPath, NULL, NULL, D3DXFX_LARGEADDRESSAWARE, NULL, &Effect, &Errors);
 			if (FAILED(loaded)) {
+				LogShaderErrors("load", Name, Errors);
 				if (Compiler) Compiler->Release();
 				if (EffectSource) EffectSource->Release();
 				if (Effect) Effect->Release();
 				if (Errors) Errors->Release();
 				if (EffectBuffer) EffectBuffer->Release();
 				Enabled = false;
-				return success;
+				return false;
 			}
 
 			success = true;
@@ -185,6 +207,8 @@ bool EffectRecord::LoadEffect() {
 
 	//ShaderManager::RegisterEffect sets Enabled after this returns
 	Enabled = Effect != nullptr;
+	if (!Effect)
+		Log("[shader] %s produced no effect object, it will not render", Name);
 
 	if (Compiler) Compiler->Release();
 	if (Errors) Errors->Release();

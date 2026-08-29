@@ -17,6 +17,8 @@ It does [b]not[/b] require New Vegas Reloaded, NVR Shadows, or any external shad
 
 [list]
 [*][b]Projected flashlight cone[/b] with configurable angle, distance, colour, intensity, and spot size.
+[*][b]Separate interior and exterior brightness[/b] with independent dimmer and intensity settings.
+[*][b]Brightness hotkeys[/b] adjust the active interior or exterior profile and save it immediately.
 [*][b]Weapon attachment[/b]: follow the weapon when armed, or fall back to the camera.
 [*][b]Depth-aware rendering[/b] with built-in world/viewmodel depth handling.
 [*][b]Material-aware surface lighting[/b] for nearby static geometry.
@@ -88,10 +90,11 @@ Use the normal Pip-Boy light control. Better Flashlight NVSE reads that light st
 Settings are available in MCM:
 
 [list]
-[*][b]Flashlight[/b]: enabled, attach to weapon, cone angle, spot size, near fade, distance, colour, dimmer, intensity, flicker, warm-up.
+[*][b]Flashlight[/b]: enabled, attach to weapon, cone angle, spot size, near fade, distance, colour, separate interior/exterior dimmer and intensity, flicker, warm-up.
 [*][b]Volumetric[/b]: master toggle, separate first/third person toggles, strength, anisotropy, height falloff, max distance, and first-person strength/offset tuning.
 [*][b]Surface Lighting[/b]: material lighting toggle, geometry strength, hotspot reduction, normal strength, specular strength.
 [*][b]Battery[/b]: battery toggle, drain/recharge rates, recharge threshold, icon style, position, and scale.
+[*][b]Hotkeys[/b]: raise or lower dimmer and intensity for whichever profile is active. Defaults are numpad plus/minus for dimmer and numpad multiply/divide for intensity.
 [/list]
 
 MCM changes apply live. Manual edits to [font=Courier New]config\BetterFlashlightNVSE.ini[/font] require a restart unless your setup dispatches the reload event.

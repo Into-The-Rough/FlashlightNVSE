@@ -5,7 +5,7 @@ static void SetVanillaPipboyLightCulled(bool abCulled);
 static constexpr UInt32 kBSUtilities_GetObjectByName = 0x4AAE30;
 
 static bool HasB42Projection() {
-	if (!Player || Player->isThirdPerson || !Player->firstPersonNiNode)
+	if (!Player || !Player->process || Player->isThirdPerson || !Player->firstPersonNiNode || !Player->IsAiming())
 		return false;
 	if (CdeclCall<NiAVObject*>(kBSUtilities_GetObjectByName, Player->firstPersonNiNode, "OldIS"))
 		return true;
@@ -29,8 +29,6 @@ void FlashlightEffect::UpdateSettings() {
 
 	Settings.Offset    = NiPoint3(Config::Flashlight.OffsetX, Config::Flashlight.OffsetY, Config::Flashlight.OffsetZ);
 	Settings.Color     = NiColor(Config::Flashlight.ColorR, Config::Flashlight.ColorG, Config::Flashlight.ColorB);
-	Settings.Dimmer    = Config::Flashlight.Dimmer;
-	Settings.Intensity = Config::Flashlight.Intensity;
 	Settings.SpotSize  = Config::Flashlight.SpotSize;
 	Settings.NearFade  = Config::Flashlight.NearFade;
 	Settings.HotspotLimit = Config::Flashlight.HotspotLimit;
@@ -150,20 +148,21 @@ void FlashlightEffect::UpdateConstants() {
 	WeaponPos.z += offset.z;
 
 	SetVanillaPipboyLightCulled(true);
+	const auto& brightness = Player->parentCell && Player->parentCell->IsInterior() ? Config::Interior : Config::Exterior;
 
 	SpotLight->resetTraits = false;
 	SpotLight->diffuseColor = Settings.Color;
-	SpotLight->fadeValue = Settings.Dimmer * 10.0f;
+	SpotLight->fadeValue = brightness.Dimmer * 10.0f;
 	SpotLight->m_worldTransform.pos = WeaponPos;
 	SpotLight->m_worldTransform.rot = WeaponRot;
 	SpotLight->m_worldTransform.scale = 1.0f;
 	SpotLight->outerSpotAngle = Settings.ConeAngle;
 	SpotLight->radius = Settings.Distance;
 
-	Constants.Tuning = D3DXVECTOR4(Settings.SpotSize, Settings.Intensity, Settings.NearFade, Settings.softEdges ? 1.0f : 0.0f);
+	Constants.Tuning = D3DXVECTOR4(Settings.SpotSize, brightness.Intensity, Settings.NearFade, Settings.softEdges ? 1.0f : 0.0f);
 	Constants.Hotspot = D3DXVECTOR4(Settings.HotspotLimit, Settings.CookieStrength, 0.0f, 0.0f);
 
-	UpdateEngineLight(WeaponPos, WeaponRot);
+	UpdateEngineLight(WeaponPos, WeaponRot, brightness.Dimmer);
 	GetFlashlightViewProj();
 };
 
@@ -186,7 +185,7 @@ void FlashlightEffect::GetFlashlightViewProj() {
 	Constants.FlashlightViewProj = View * Proj;
 }
 
-void FlashlightEffect::UpdateEngineLight(const NiPoint3& Position, const NiMatrix33& Rotation) {
+void FlashlightEffect::UpdateEngineLight(const NiPoint3& Position, const NiMatrix33& Rotation, float afDimmer) {
 	if (!Settings.engineLightEnabled || !WorldSceneGraph || b42ProjectionActive) {
 		DestroyEngineLight();
 		return;
@@ -220,7 +219,7 @@ void FlashlightEffect::UpdateEngineLight(const NiPoint3& Position, const NiMatri
 		Settings.Color.g * Settings.engineLightSpecular,
 		Settings.Color.b * Settings.engineLightSpecular
 	);
-	EngineLight->fadeValue = Settings.Dimmer * Settings.engineLightDimmer;
+	EngineLight->fadeValue = afDimmer * Settings.engineLightDimmer;
 	EngineLight->radius = Settings.Distance;
 	EngineLight->radius0E4 = 1.0f;
 	EngineLight->baseLight = nullptr;
@@ -253,7 +252,11 @@ void FlashlightEffect::QueueEngineLight() {
 }
 
 void FlashlightEffect::PrepareB42OpticsRender() {
-	b42ProjectionActive = HasB42Projection();
+	SetB42ProjectionActive(HasB42Projection());
+}
+
+void FlashlightEffect::SetB42ProjectionActive(bool abActive) {
+	b42ProjectionActive = abActive;
 	if (!b42ProjectionActive)
 		return;
 	SetVanillaPipboyLightCulled(true);

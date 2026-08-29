@@ -10,16 +10,13 @@
 float4 TESR_SpotLightPosition;
 float4 TESR_SpotLightColor;
 float4 TESR_SpotLightDirection;
-float4 TESR_SunColor;
 float4 TESR_VolumetricControl;   // x=strength, y=anisotropy g, z=height falloff, w=max distance
 float4 TESR_VolumetricData;      // xyz=march light pos (pushed off-camera in 1st person for parallax), w=1st-person strength floor
 float4 TESR_FlashLightTuning;    // x=spot size scale (match the surface pool)
 float4 TESR_ReciprocalResolution;
 float4x4 TESR_FlashLightViewProjTransform;
 
-//per-unit-length calibration of the scatter integral. beam energy uses the surface
-//pool's model (colour x dimmer x sun-luma night boost) so the shaft tracks the pool
-//through day/night auto-exposure - Strength scales from here
+//per-unit-length calibration of the scatter integral
 #define VOL_CALIBRATION 0.0008
 #define VOL_SURFACE_FADE 256.0
 #define FL_SIZE TESR_FlashLightTuning.x
@@ -165,10 +162,8 @@ float4 Volumetric(VSOUT IN) : COLOR0 {
         t += stepLen;
     }
 
-    //same energy model as the surface pool: colour x dimmer (.w) x night boost,
-    //so the shaft keeps a constant ratio to the pool through day/night exposure
-    float sunLuma = 1.0 / max(0.05, luma(TESR_SunColor));
-    float3 lightColor = TESR_SpotLightColor.rgb * TESR_SpotLightColor.w * sunLuma;
+    //match the surface pool's colour and dimmer
+    float3 lightColor = TESR_SpotLightColor.rgb * TESR_SpotLightColor.w;
 
     //fade with light-camera distance so the in-scatter can't pile onto the surface
     //pool when the source sits near the eye. in 1st person the virtual offset gives

@@ -727,6 +727,31 @@ namespace MaterialPass {
 		return true;
 	}
 
+	//the queue is transformed by the frame-start ViewProj while the depth buffer it is tested
+	//against belongs to whatever projection the engine last drew with. a menu camera or a
+	//per-weapon near plane override desyncs the two, which is what the xray reports describe.
+	static void LogProjectionDivergence() {
+		if (!Config::Flashlight.MaterialLightLogProjection || !WorldSceneGraph || !WorldSceneGraph->camera)
+			return;
+
+		const D3DXMATRIX& cached = TheRenderManager->ViewProjMatrix;
+		D3DXMATRIX live = TheRenderManager->renderer->viewMatrix * TheRenderManager->renderer->projMatrix;
+		float worst = 0.0f;
+		for (int i = 0; i < 16; ++i) {
+			float delta = fabsf(((const float*)&live)[i] - ((const float*)&cached)[i]);
+			if (delta > worst)
+				worst = delta;
+		}
+
+		static UInt32 throttle = 0;
+		if (worst <= 0.0001f || throttle++ % 300)
+			return;
+
+		const NiFrustum& frustum = WorldSceneGraph->camera->Frustum;
+		Log("[matpass] viewproj delta=%.6f near=%.4f far=%.1f queue=%u",
+			worst, frustum.Near, frustum.Far, (unsigned)g_renderQueue.size());
+	}
+
 	void RenderWorld() {
 		if (!g_renderActive || g_renderQueue.empty() || !TheRenderManager || !TheShaderManager)
 			return;
@@ -734,6 +759,8 @@ namespace MaterialPass {
 		IDirect3DDevice9* device = TheRenderManager->renderer->device;
 		if (!EnsureShaders(device))
 			return;
+
+		LogProjectionDivergence();
 
 		NiDX9RenderState* renderState = TheRenderManager->renderer->renderState;
 		SavedDeviceState saved{};

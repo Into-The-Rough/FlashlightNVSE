@@ -31,7 +31,6 @@ float4x4 TESR_FlashLightViewProjTransform;
 float4   TESR_SpotLightPosition;
 float4   TESR_SpotLightColor;
 float4   TESR_SpotLightDirection;
-float4   TESR_SunColor;
 float4   TESR_ReciprocalResolution;
 float4   TESR_VolumetricControl;   // x = strength (0 = off, also the Combine gate)
 float4   TESR_FlashLightHotspot;   // x = hotspot reduction strength; y = cookie/breakup strength
@@ -119,8 +118,7 @@ float4 Flashlight(VSOUT IN) : COLOR0 {
     float2 cookieUV = (lightSpaceCoord.xy - 0.5) / max(0.05, FL_SIZE) + 0.5;
     float lightTexture = tex2D(TESR_SpotLightTexture, cookieUV).r * BeamBreakup(cookieUV);
 
-    float sunLuma = 1 / max(0.05, luma(TESR_SunColor));
-    float3 lightColor = TESR_SpotLightColor.rgb * TESR_SpotLightColor.w * sunLuma;
+    float3 lightColor = TESR_SpotLightColor.rgb * TESR_SpotLightColor.w;
 
     float angleCosMax = cos(radians(TESR_SpotLightDirection.w * FL_SIZE));
     float angleCosMin = cos(radians(TESR_SpotLightDirection.w * FL_SIZE * 0.5));
