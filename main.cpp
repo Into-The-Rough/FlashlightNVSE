@@ -4,6 +4,9 @@
 #include "src/features/Battery.h"
 #include "src/features/BrightnessHotkeys.h"
 
+#define PLUGIN_VERSION 111
+#define PLUGIN_VERSION_STRING "1.1.1"
+
 static PluginHandle g_pluginHandle = 0xFFFFFFFF;
 static NVSEMessagingInterface* g_messaging = nullptr;
 static constexpr UInt32 kJG_OnRenderGameModeUpdate = 10014;
@@ -72,13 +75,13 @@ extern "C" {
 __declspec(dllexport) bool NVSEPlugin_Query(const PluginInterface* Interface, PluginInfo* Info) {
 	Info->InfoVersion = PluginInfo::kInfoVersion;
 	Info->Name = "BetterFlashlightNVSE";
-	Info->Version = 100;
+	Info->Version = PLUGIN_VERSION;
 	return true;
 }
 
 __declspec(dllexport) bool NVSEPlugin_Load(const PluginInterface* Interface) {
 	LogOpen("BetterFlashlightNVSE.log");
-	Log("BetterFlashlightNVSE build %s %s", __DATE__, __TIME__);
+	Log("BetterFlashlightNVSE v" PLUGIN_VERSION_STRING " build %s %s", __DATE__, __TIME__);
 	Config::Load();
 
 	if (!Interface->IsEditor) {
