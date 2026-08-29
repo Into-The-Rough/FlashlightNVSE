@@ -4,8 +4,8 @@
 #include "src/features/Battery.h"
 #include "src/features/BrightnessHotkeys.h"
 
-#define PLUGIN_VERSION 111
-#define PLUGIN_VERSION_STRING "1.1.1"
+#define PLUGIN_VERSION 112
+#define PLUGIN_VERSION_STRING "1.1.2"
 
 static PluginHandle g_pluginHandle = 0xFFFFFFFF;
 static NVSEMessagingInterface* g_messaging = nullptr;
