@@ -53,6 +53,12 @@ void FlashlightEffect::UpdateSettings() {
 		SetVanillaPipboyLightCulled(false);
 };
 
+//currentMode 1 is gameplay, anything higher means a menu owns the screen - terminals,
+//lockpicking, dialogue and the pip-boy all render their own view over the world
+static bool MenuOwnsScreen() {
+	return InterfaceManager && InterfaceManager->currentMode > 1;
+}
+
 static MagicItem* GetPipBoyLightItem() {
 	return (MagicItem*)(ThisStdCall<uint8_t*>(0x93CCD0, NULL) + 0x18);
 }
@@ -97,7 +103,7 @@ void FlashlightEffect::UpdateConstants() {
 		return;
 	}
 
-	if (InterfaceManager && InterfaceManager->IsPipBoyOpen()) {
+	if (MenuOwnsScreen()) {
 		spotLightActive = false;
 		DisableEngineLight();
 		//the cone is skipped while the menu is up, the vanilla light has to take over

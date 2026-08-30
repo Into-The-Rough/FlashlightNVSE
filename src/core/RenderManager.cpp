@@ -203,6 +203,7 @@ void RenderManager::SetupSceneCamera() {
 
 		WorldViewProjMatrix = worldMatrix * viewMatrix * projMatrix;
 		ViewProjMatrix = viewMatrix * projMatrix;
+		ProjMatrix = projMatrix;
 		D3DXMatrixInverse(&InvProjMatrix, NULL, &projMatrix);
 		InvViewProjMatrix = InvProjMatrix * invViewMatrix;
 

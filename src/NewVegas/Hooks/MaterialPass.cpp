@@ -338,6 +338,11 @@ namespace MaterialPass {
 
 	static bool g_renderActive = false;
 	static std::vector<RenderItem> g_renderQueue;
+
+	struct CaptureCounters {
+		UInt32 visited, culled, outOfLight, skinnedOrAlpha, terrainLOD, noGeomData, noTexture, queued;
+	};
+	static CaptureCounters g_counters{};
 	static IDirect3DVertexShader9* g_vertexShader = nullptr;
 	static IDirect3DPixelShader9* g_pixelShader = nullptr;
 	static IDirect3DVertexShader9* g_normalMapVertexShader = nullptr;
@@ -457,23 +462,38 @@ namespace MaterialPass {
 			return false;
 		if ((int)g_renderQueue.size() >= Config::Flashlight.MaterialLightMaxGeometry)
 			return false;
-		if (apGeometry->skinInstance || UsesAlphaBlendOrTest(apGeometry))
+		if (apGeometry->skinInstance || UsesAlphaBlendOrTest(apGeometry)) {
+			++g_counters.skinnedOrAlpha;
 			return false;
-		if (apGeometry->m_flags & NiAVObject::APP_CULLED)
+		}
+		if (apGeometry->m_flags & NiAVObject::APP_CULLED) {
+			++g_counters.culled;
 			return false;
+		}
 
 		const char* name = apGeometry->m_pcName ? apGeometry->m_pcName : "";
-		if (strstr(name, "Terrain LOD") == name)
+		if (strstr(name, "Terrain LOD") == name) {
+			++g_counters.terrainLOD;
 			return false;
+		}
 
 		NiGeometryData* modelData = apGeometry->geomData;
-		if (!modelData || !modelData->m_pkBuffData || !modelData->m_pkBuffData->VertCount)
+		if (!modelData || !modelData->m_pkBuffData || !modelData->m_pkBuffData->VertCount) {
+			++g_counters.noGeomData;
 			return false;
-		if (!IsWithinLight(apGeometry))
+		}
+		if (!IsWithinLight(apGeometry)) {
+			++g_counters.outOfLight;
 			return false;
+		}
 
 		*apDiffuse = GetTexture(apProperty, 0);
-		return *apDiffuse != nullptr;
+		if (!*apDiffuse) {
+			++g_counters.noTexture;
+			return false;
+		}
+		++g_counters.queued;
+		return true;
 	}
 
 	static void QueueGeometry(
@@ -518,12 +538,17 @@ namespace MaterialPass {
 		QueueGeometry(apGeometry, property, normalMap, specular, specularStrength, specularPower, useNormalMap);
 	}
 
-	static void CaptureObject(NiAVObject* apObject, bool abCheckBound) {
+	static void CaptureObject(NiAVObject* apObject) {
 		if (!apObject || !*(void**)apObject)
 			return;
-		if (apObject->m_flags & NiAVObject::APP_CULLED)
+		++g_counters.visited;
+		if (apObject->m_flags & NiAVObject::APP_CULLED) {
+			++g_counters.culled;
 			return;
-		if (abCheckBound && !IsWithinLight(apObject))
+		}
+		//node bounds here do not enclose their children, so they cannot prune a subtree.
+		//the cone test belongs at the geometry, in ShouldQueueGeometry.
+		if ((int)g_renderQueue.size() >= Config::Flashlight.MaterialLightMaxGeometry)
 			return;
 
 		if (IsGeometry(apObject)) {
@@ -544,24 +569,24 @@ namespace MaterialPass {
 				return;
 			UInt32 index = (UInt32)switchNode->m_iIndex;
 			if (index < node->m_children.numObjs)
-				CaptureObject(node->m_children.data[index], true);
+				CaptureObject(node->m_children.data[index]);
 			return;
 		}
 
 		for (UInt32 i = 0; i < node->m_children.numObjs; ++i)
-			CaptureObject(node->m_children.data[i], true);
+			CaptureObject(node->m_children.data[i]);
 	}
 
 	void CaptureScene(SceneGraph* apSceneGraph) {
 		if (!g_renderActive || !apSceneGraph)
 			return;
 
-		//scene root bound doesn't cover its children
-		CaptureObject(apSceneGraph, false);
+		CaptureObject(apSceneGraph);
 	}
 
 	void BeginFrame(bool abActive) {
 		g_renderQueue.clear();
+		g_counters = CaptureCounters{};
 		g_renderActive = abActive && Config::Flashlight.MaterialLightEnabled &&
 			Config::Flashlight.MaterialLightRender &&
 			Config::Flashlight.MaterialLightIntensity > 0.0f &&
@@ -571,6 +596,13 @@ namespace MaterialPass {
 	static bool CompileShader(const char* apSource, const char* apEntry, const char* apProfile, ID3DXBuffer** apCode) {
 		ID3DXBuffer* errors = nullptr;
 		HRESULT hr = D3DXCompileShader(apSource, (UINT)strlen(apSource), nullptr, nullptr, apEntry, apProfile, 0, apCode, &errors, nullptr);
+		if (FAILED(hr)) {
+			const char* text = errors ? (const char*)errors->GetBufferPointer() : nullptr;
+			int length = errors ? (int)errors->GetBufferSize() : 0;
+			while (length > 0 && (text[length - 1] == '\0' || text[length - 1] == '\n' || text[length - 1] == '\r'))
+				--length;
+			Log("[matpass] %s shader failed to compile (hr 0x%08X): %.*s", apProfile, hr, length, text ? text : "");
+		}
 		if (errors)
 			errors->Release();
 		return SUCCEEDED(hr);
@@ -655,7 +687,9 @@ namespace MaterialPass {
 
 		setState(D3DRS_ZENABLE, D3DZB_TRUE);
 		setState(D3DRS_ZWRITEENABLE, D3DZB_FALSE);
-		setState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+		//the projection follows IsReversedDepth, so the comparison has to as well - under
+		//reversed Z nearer is larger, and LESSEQUAL passes exactly the occluded fragments
+		setState(D3DRS_ZFUNC, TheRenderManager->IsReversedDepth() ? D3DCMP_GREATEREQUAL : D3DCMP_LESSEQUAL);
 		setState(D3DRS_ALPHABLENDENABLE, TRUE);
 		setState(D3DRS_SRCBLEND, D3DBLEND_ONE);
 		setState(D3DRS_DESTBLEND, D3DBLEND_ONE);
@@ -728,37 +762,87 @@ namespace MaterialPass {
 	}
 
 	//the queue is transformed by the frame-start ViewProj while the depth buffer it is tested
-	//against belongs to whatever projection the engine last drew with. a menu camera or a
-	//per-weapon near plane override desyncs the two, which is what the xray reports describe.
+	//against belongs to whatever projection the engine last drew with. split the divergence into
+	//view vs projection, and report whether there is any depth to test against at all.
 	static void LogProjectionDivergence() {
 		if (!Config::Flashlight.MaterialLightLogProjection || !WorldSceneGraph || !WorldSceneGraph->camera)
 			return;
 
-		const D3DXMATRIX& cached = TheRenderManager->ViewProjMatrix;
-		D3DXMATRIX live = TheRenderManager->renderer->viewMatrix * TheRenderManager->renderer->projMatrix;
-		float worst = 0.0f;
-		for (int i = 0; i < 16; ++i) {
-			float delta = fabsf(((const float*)&live)[i] - ((const float*)&cached)[i]);
-			if (delta > worst)
-				worst = delta;
-		}
-
 		static UInt32 throttle = 0;
-		if (worst <= 0.0001f || throttle++ % 300)
+		if (throttle++ % 300)
 			return;
 
+		auto worstOf = [](const D3DXMATRIX& a, const D3DXMATRIX& b, int& aOutIndex) {
+			float worst = 0.0f;
+			aOutIndex = -1;
+			for (int i = 0; i < 16; ++i) {
+				float delta = fabsf(((const float*)&a)[i] - ((const float*)&b)[i]);
+				if (delta > worst) { worst = delta; aOutIndex = i; }
+			}
+			return worst;
+		};
+
+		const D3DXMATRIX& liveView = TheRenderManager->renderer->viewMatrix;
+		const D3DXMATRIX& liveProj = TheRenderManager->renderer->projMatrix;
+		int viewIndex = -1, projIndex = -1;
+		float viewWorst = worstOf(TheRenderManager->ViewMatrix, liveView, viewIndex);
+		float projWorst = worstOf(TheRenderManager->ProjMatrix, liveProj, projIndex);
+
+		IDirect3DSurface9* depth = nullptr;
+		TheRenderManager->renderer->device->GetDepthStencilSurface(&depth);
+		D3DSURFACE_DESC desc{};
+		if (depth) depth->GetDesc(&desc);
+
 		const NiFrustum& frustum = WorldSceneGraph->camera->Frustum;
-		Log("[matpass] viewproj delta=%.6f near=%.4f far=%.1f queue=%u",
-			worst, frustum.Near, frustum.Far, (unsigned)g_renderQueue.size());
+		Log("[matpass] near=%.4f far=%.1f queue=%u depth=%s %ux%u",
+			frustum.Near, frustum.Far, (unsigned)g_renderQueue.size(),
+			depth ? "yes" : "NONE", desc.Width, desc.Height);
+		Log("[matpass] view worst=%.6f at [%d] (%.6f vs %.6f)",
+			viewWorst, viewIndex,
+			viewIndex >= 0 ? ((const float*)&TheRenderManager->ViewMatrix)[viewIndex] : 0.0f,
+			viewIndex >= 0 ? ((const float*)&liveView)[viewIndex] : 0.0f);
+		Log("[matpass] proj worst=%.6f at [%d] (%.6f vs %.6f)",
+			projWorst, projIndex,
+			projIndex >= 0 ? ((const float*)&TheRenderManager->ProjMatrix)[projIndex] : 0.0f,
+			projIndex >= 0 ? ((const float*)&liveProj)[projIndex] : 0.0f);
+		Log("[matpass] proj depth terms ours _33=%.6f _43=%.6f live _33=%.6f _43=%.6f",
+			TheRenderManager->ProjMatrix._33, TheRenderManager->ProjMatrix._43,
+			liveProj._33, liveProj._43);
+
+		if (depth) depth->Release();
+	}
+
+	//latched on the reason pointer, so a steady state logs once rather than every frame
+	static void LogPassGate(const char* apReason) {
+		static const char* sLastReason = nullptr;
+		if (sLastReason == apReason)
+			return;
+		sLastReason = apReason;
+		if (apReason)
+			Log("[matpass] not drawing: %s", apReason);
 	}
 
 	void RenderWorld() {
-		if (!g_renderActive || g_renderQueue.empty() || !TheRenderManager || !TheShaderManager)
+		if (!TheRenderManager || !TheShaderManager)
 			return;
+		if (!g_renderActive) { LogPassGate("pass inactive, flashlight off or disabled in config"); return; }
+		if (g_renderQueue.empty()) {
+			LogPassGate("nothing queued in the light cone");
+			static bool sReported = false;
+			if (!sReported && Config::Flashlight.MaterialLightLogProjection) {
+				sReported = true;
+				const D3DXVECTOR4& light = TheShaderManager->SpotLightPosition[0];
+				Log("[matpass] light pos=(%.1f %.1f %.1f) radius=%.1f", light.x, light.y, light.z, light.w);
+				Log("[matpass] visited=%u culled=%u outOfLight=%u skinnedOrAlpha=%u terrainLOD=%u noGeomData=%u noTexture=%u queued=%u",
+					g_counters.visited, g_counters.culled, g_counters.outOfLight, g_counters.skinnedOrAlpha,
+					g_counters.terrainLOD, g_counters.noGeomData, g_counters.noTexture, g_counters.queued);
+			}
+			return;
+		}
 
 		IDirect3DDevice9* device = TheRenderManager->renderer->device;
-		if (!EnsureShaders(device))
-			return;
+		if (!EnsureShaders(device)) { LogPassGate("pass shaders unavailable"); return; }
+		LogPassGate(nullptr);
 
 		LogProjectionDivergence();
 
