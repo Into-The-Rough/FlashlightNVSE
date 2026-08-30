@@ -6,12 +6,11 @@ constexpr UInt32 kVtbl_LightEffect = 0x107A2CC;
 static void SetVanillaPipboyLightCulled(bool abCulled);
 static constexpr UInt32 kBSUtilities_GetObjectByName = 0x4AAE30;
 
+//neither OldIS nor PRJ distinguishes a fitted scope - OldIS is absent in practice and PRJ is
+//present and visible whenever a first person weapon is up, so polling nodes suppressed the cone
+//on every aim. RenderCameraHook is the only signal tied to the scope actually rendering.
 static bool HasB42Projection() {
-	if (!Player || !Player->process || Player->isThirdPerson || !Player->firstPersonNiNode || !Player->IsAiming())
-		return false;
-	if (CdeclCall<NiAVObject*>(kBSUtilities_GetObjectByName, Player->firstPersonNiNode, "OldIS"))
-		return true;
-	return CdeclCall<NiAVObject*>(kBSUtilities_GetObjectByName, Player->firstPersonNiNode, "PRJ") != nullptr;
+	return false;
 }
 
 

@@ -577,11 +577,23 @@ namespace MaterialPass {
 			CaptureObject(node->m_children.data[i]);
 	}
 
+	static double g_captureMS = 0.0;
+
 	void CaptureScene(SceneGraph* apSceneGraph) {
 		if (!g_renderActive || !apSceneGraph)
 			return;
 
+		if (!Config::Flashlight.MaterialLightLogProjection) {
+			CaptureObject(apSceneGraph);
+			return;
+		}
+
+		LARGE_INTEGER freq, start, end;
+		QueryPerformanceFrequency(&freq);
+		QueryPerformanceCounter(&start);
 		CaptureObject(apSceneGraph);
+		QueryPerformanceCounter(&end);
+		g_captureMS = (double)(end.QuadPart - start.QuadPart) * 1000.0 / (double)freq.QuadPart;
 	}
 
 	void BeginFrame(bool abActive) {
@@ -792,6 +804,9 @@ namespace MaterialPass {
 		TheRenderManager->renderer->device->GetDepthStencilSurface(&depth);
 		D3DSURFACE_DESC desc{};
 		if (depth) depth->GetDesc(&desc);
+
+		Log("[matpass] walk visited=%u queued=%u in %.3f ms",
+			g_counters.visited, g_counters.queued, g_captureMS);
 
 		const NiFrustum& frustum = WorldSceneGraph->camera->Frustum;
 		Log("[matpass] near=%.4f far=%.1f queue=%u depth=%s %ux%u",
