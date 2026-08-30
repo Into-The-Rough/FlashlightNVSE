@@ -64,9 +64,13 @@ float4 CombineDepth(VSOUT IN) : COLOR0 {
 	//First-person depth is cleared before the viewmodel draw, so only valid
 	//nearer samples should replace the world depth. useViewModelBuffer gates the
 	//whole merge off in 3rd person, where the viewmodel buffer is never refreshed.
-	float useViewModel = IsDepthSet(viewModelDepth) * IsNearer(viewModelDepth, worldDepth) * useViewModelBuffer;
-	float combinedDepth = lerp(worldDepth, viewModelDepth, useViewModel);
-    float combinedViewZ = ToVS(combinedDepth, nearZ, farZ);
+	//the buffers are written with different near planes, so raw depths are not comparable.
+	//decode each with its own, then merge in view space. viewmodel clip is script-settable.
+	float worldViewZ = ToVS(worldDepth, nearZ, farZ);
+	float viewModelViewZ = ToVS(viewModelDepth, viewModelNearZ, farZ);
+
+	float useViewModel = IsDepthSet(viewModelDepth) * step(viewModelViewZ, worldViewZ) * useViewModelBuffer;
+	float combinedViewZ = lerp(worldViewZ, viewModelViewZ, useViewModel);
 
     return float4(combinedViewZ / farZ, ToPS(combinedViewZ, nearZ, farZ), 1.0, 1.0);
 }

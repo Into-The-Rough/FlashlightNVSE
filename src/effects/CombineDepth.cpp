@@ -10,7 +10,8 @@ void CombineDepthEffect::UpdateConstants() {
 	else {
 		float nearZ = JG_GetClipDist();
 
-		Constants.viewNearZ = nearZ ? max(nearZ, 0.3)  : Camera->Frustum.Near;
+		//no floor: clamping here lies to the shader about the plane the viewmodel was drawn with
+		Constants.viewNearZ = nearZ > 0.0f ? nearZ : Camera->Frustum.Near;
 	}
 }
 
