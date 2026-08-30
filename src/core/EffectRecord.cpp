@@ -68,16 +68,16 @@ void EffectRecord::DisposeEffect() {
 }
 
 //D3DX error buffers are not reliably NUL terminated and usually carry trailing padding
-static void LogShaderErrors(const char* apStage, const char* apName, ID3DXBuffer* apErrors) {
+static void LogShaderErrors(const char* apStage, const char* apName, ID3DXBuffer* apErrors, HRESULT ahr) {
 	if (!apErrors || !apErrors->GetBufferPointer()) {
-		Log("[shader] %s failed for %s (no compiler output)", apStage, apName);
+		Log("[shader] %s failed for %s, hr 0x%08X (no compiler output)", apStage, apName, ahr);
 		return;
 	}
 	const char* text = (const char*)apErrors->GetBufferPointer();
 	int length = (int)apErrors->GetBufferSize();
 	while (length > 0 && (text[length - 1] == '\0' || text[length - 1] == '\n' || text[length - 1] == '\r'))
 		--length;
-	Log("[shader] %s failed for %s: %.*s", apStage, apName, length, text);
+	Log("[shader] %s failed for %s, hr 0x%08X: %.*s", apStage, apName, ahr, length, text);
 }
 
 /*
@@ -122,7 +122,7 @@ bool EffectRecord::LoadEffect() {
 
 	HRESULT prepass = D3DXPreprocessShaderFromFileA(EffectSourcePath, NULL, NULL, &EffectSource, &Errors);
 	if (prepass != D3D_OK)
-		LogShaderErrors("preprocess", Name, Errors);
+		LogShaderErrors("preprocess", Name, Errors, prepass);
 	if (prepass == D3D_OK) {
 		bool Compile = !CheckPreprocessResult(EffectPreprocessedPath, EffectSource);
 		bool CompiledExists = FileExists(EffectCompiledPath);
@@ -131,7 +131,7 @@ bool EffectRecord::LoadEffect() {
 			HRESULT loaded = D3DXCreateEffectFromFileA(TheRenderManager->renderer->device, EffectCompiledPath, NULL, NULL, D3DXFX_LARGEADDRESSAWARE, NULL, &Effect, &Errors);
 			if (FAILED(loaded)) {
 				//stale or mismatched cache, the compile branch below rebuilds it
-				LogShaderErrors("cached load", Name, Errors);
+				LogShaderErrors("cached load", Name, Errors, loaded);
 				if (Effect) { Effect->Release(); Effect = NULL; }
 				if (Errors) { Errors->Release(); Errors = NULL; }
 			}
@@ -152,7 +152,7 @@ bool EffectRecord::LoadEffect() {
 				&Errors
 			);
 			if (FAILED(compiled)) {
-				LogShaderErrors("compiler creation", Name, Errors);
+				LogShaderErrors("compiler creation", Name, Errors, compiled);
 				if (Compiler) Compiler->Release();
 				if (EffectSource) EffectSource->Release();
 				if (Effect) Effect->Release();
@@ -163,7 +163,7 @@ bool EffectRecord::LoadEffect() {
 
 			compiled = Compiler->CompileEffect(NULL, &EffectBuffer, &Errors);
 			if (FAILED(compiled)) {
-				LogShaderErrors("compile", Name, Errors);
+				LogShaderErrors("compile", Name, Errors, compiled);
 				if (Compiler) Compiler->Release();
 				if (EffectSource) EffectSource->Release();
 				if (Effect) Effect->Release();
@@ -186,7 +186,7 @@ bool EffectRecord::LoadEffect() {
 
 			HRESULT loaded = D3DXCreateEffectFromFileA(TheRenderManager->renderer->device, EffectCompiledPath, NULL, NULL, D3DXFX_LARGEADDRESSAWARE, NULL, &Effect, &Errors);
 			if (FAILED(loaded)) {
-				LogShaderErrors("load", Name, Errors);
+				LogShaderErrors("load", Name, Errors, loaded);
 				if (Compiler) Compiler->Release();
 				if (EffectSource) EffectSource->Release();
 				if (Effect) Effect->Release();
