@@ -59,6 +59,18 @@ bool RenderManager::IsReversedDepth() {
 	return NiDX9Renderer::GetSingleton()->m_fZClear < 1.0f;
 }
 
+//the scene renders into an offscreen target, so identity against the back buffer is no
+//use. anything projecting the world into a texture - B42 Optics scopes, the realtime
+//pip-boy map, location discovery - uses a small square instead of a frame-sized one.
+bool RenderManager::RenderingToSceneTarget() {
+	if (!renderer)
+		return false;
+	NiRenderTargetGroup* current = renderer->GetCurrentRT();
+	if (!current)
+		return true;
+	return current->GetWidth(0) == renderer->width && current->GetHeight(0) == renderer->height;
+}
+
 void RenderManager::UpdateSceneCameraData() {
 
 	NiCamera* Camera = WorldSceneGraph->camera;

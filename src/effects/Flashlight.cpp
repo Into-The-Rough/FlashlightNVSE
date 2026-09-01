@@ -6,12 +6,7 @@ constexpr UInt32 kVtbl_LightEffect = 0x107A2CC;
 static void SetVanillaPipboyLightCulled(bool abCulled);
 static constexpr UInt32 kBSUtilities_GetObjectByName = 0x4AAE30;
 
-//neither OldIS nor PRJ distinguishes a fitted scope - OldIS is absent in practice and PRJ is
-//present and visible whenever a first person weapon is up, so polling nodes suppressed the cone
-//on every aim. RenderCameraHook is the only signal tied to the scope actually rendering.
-static bool HasB42Projection() {
-	return false;
-}
+
 
 
 void FlashlightEffect::RegisterConstants() {
@@ -91,14 +86,14 @@ void FlashlightEffect::UpdateConstants() {
 	// based on JIP https://github.com/jazzisparis/JIP-LN-NVSE/blob/5a30ac4356ea0e93b9ff357b5031b1e420240a4d/functions_jip/jip_fn_ui.h#L1469
 	UInt32 lightIsOn = ThisStdCall<bool>(0x822B90, &Player->magicTarget, GetPipBoyLightItem(), 1);
 
-	spotLightActive = Enabled && lightIsOn && !b42ProjectionActive;
+	spotLightActive = Enabled && lightIsOn;
 	if (!spotLightActive) {
 		// disable light by setting it to 0 dimmer & radius
 		SpotLight->fadeValue = 0.0f;
 		SpotLight->radius = 0.0f;
 		SpotLight->resetTraits = false;
 		DisableEngineLight();
-		SetVanillaPipboyLightCulled(Enabled && lightIsOn && b42ProjectionActive);
+		SetVanillaPipboyLightCulled(false);
 		return;
 	}
 
@@ -204,7 +199,7 @@ void FlashlightEffect::GetFlashlightViewProj() {
 }
 
 void FlashlightEffect::UpdateEngineLight(const NiPoint3& Position, const NiMatrix33& Rotation, float afDimmer) {
-	if (!Settings.engineLightEnabled || !WorldSceneGraph || b42ProjectionActive) {
+	if (!Settings.engineLightEnabled || !WorldSceneGraph) {
 		DestroyEngineLight();
 		return;
 	}
@@ -248,7 +243,7 @@ void FlashlightEffect::UpdateEngineLight(const NiPoint3& Position, const NiMatri
 }
 
 void FlashlightEffect::QueueEngineLight() {
-	if (!EngineLight || !Settings.engineLightEnabled || !spotLightActive || b42ProjectionActive)
+	if (!EngineLight || !Settings.engineLightEnabled || !spotLightActive)
 		return;
 
 	ShadowSceneNode* sceneNode = BSShaderManager::GetShadowSceneNode(0);
@@ -267,29 +262,6 @@ void FlashlightEffect::QueueEngineLight() {
 	}
 	if (ShadowSceneLight* lightData = ShadowSceneLight::CreatePointLight(EngineLight, sceneNode->portalGraph))
 		sceneNode->QueueLightData(lightData);
-}
-
-void FlashlightEffect::PrepareB42OpticsRender() {
-	SetB42ProjectionActive(HasB42Projection());
-}
-
-void FlashlightEffect::SetB42ProjectionActive(bool abActive) {
-	b42ProjectionActive = abActive;
-	if (!b42ProjectionActive)
-		return;
-	SetVanillaPipboyLightCulled(true);
-	DisableEngineLight();
-	if (!EngineLight)
-		return;
-	ShadowSceneNode* sceneNode = BSShaderManager::GetShadowSceneNode(0);
-	if (!sceneNode)
-		return;
-	for (auto entry = sceneNode->lights.start; entry; entry = entry->next) {
-		if (entry->data && entry->data->sourceLight == EngineLight) {
-			sceneNode->UpdateQueuedLight(entry->data);
-			return;
-		}
-	}
 }
 
 void FlashlightEffect::DisableEngineLight() {

@@ -8,8 +8,6 @@ void (__thiscall* Render)(Main*, BSRenderedTexture*, int, int) =
 	(void (__thiscall*)(Main*, BSRenderedTexture*, int, int))Hooks::Render;
 void __fastcall RenderHook(Main* This, UInt32 edx, BSRenderedTexture* RenderedTexture, int Arg2, int Arg3) {
 	FlashlightEffect* flashlight = TheShaderManager ? TheShaderManager->Effects.Flashlight : nullptr;
-	if (flashlight)
-		flashlight->PrepareB42OpticsRender();
 	if (TheRenderManager && TheShaderManager && Player && Player->parentCell &&
 		Config::Main.RenderEffects && TheShaderManager->DeviceReady && flashlight && flashlight->Enabled) {
 		TheRenderManager->UpdateSceneCameraData();
@@ -25,19 +23,6 @@ void __fastcall RenderHook(Main* This, UInt32 edx, BSRenderedTexture* RenderedTe
 	(*Render)(This, RenderedTexture, Arg2, Arg3);
 }
 
-void (__cdecl* RenderCamera)(NiCamera*, void*, void*) =
-	(void (__cdecl*)(NiCamera*, void*, void*))0x00B6BEE0;
-void __cdecl RenderCameraHook(NiCamera* Camera, void* Scene, void* CullingProcess) {
-	FlashlightEffect* flashlight = TheShaderManager ? TheShaderManager->Effects.Flashlight : nullptr;
-	bool b42Camera = Camera && Camera->m_pcName && strcmp(Camera->m_pcName, "ISCM") == 0;
-	bool wasActive = flashlight && flashlight->b42ProjectionActive;
-	if (b42Camera && flashlight && flashlight->Enabled)
-		flashlight->SetB42ProjectionActive(true);
-	RenderCamera(Camera, Scene, CullingProcess);
-	if (b42Camera && flashlight && flashlight->Enabled)
-		flashlight->SetB42ProjectionActive(wasActive);
-}
-
 void(__cdecl* ProcessImageSpaceShaders)(NiDX9Renderer*, BSRenderedTexture*, BSRenderedTexture*) =
 	(void(__cdecl*)(NiDX9Renderer*, BSRenderedTexture*, BSRenderedTexture*))Hooks::ProcessImageSpaceShaders;
 
@@ -51,9 +36,8 @@ void (__thiscall* RenderWorldSceneGraph)(Main*, Sun*, UInt8, UInt8, UInt8) =
 void __fastcall RenderWorldSceneGraphHook(Main* This, UInt32 edx, Sun* SkySun, UInt8 IsFirstPerson, UInt8 WireFrame, UInt8 Arg4) {
 	(*RenderWorldSceneGraph)(This, SkySun, IsFirstPerson, WireFrame, Arg4);
 
-	FlashlightEffect* flashlight = TheShaderManager ? TheShaderManager->Effects.Flashlight : nullptr;
 	if (TheRenderManager && TheTextureManager && WorldSceneGraph &&
-		(!flashlight || !flashlight->b42ProjectionActive)) {
+		TheRenderManager->RenderingToSceneTarget()) {
 		MaterialPass::CaptureScene(WorldSceneGraph);
 		MaterialPass::RenderWorld();
 	}
@@ -109,7 +93,7 @@ void __cdecl ProcessImageSpaceShadersHook(NiDX9Renderer* Renderer, BSRenderedTex
 	if (!Player || !Player->parentCell)          { ProcessImageSpaceShaders(Renderer, SourceTarget, DestinationTarget); return; }
 	if (!TheShaderManager->DeviceReady)          { ProcessImageSpaceShaders(Renderer, SourceTarget, DestinationTarget); return; }
 	if (!TheShaderManager->Effects.Flashlight->Enabled) { ProcessImageSpaceShaders(Renderer, SourceTarget, DestinationTarget); return; }
-	if (TheShaderManager->Effects.Flashlight->b42ProjectionActive) { ProcessImageSpaceShaders(Renderer, SourceTarget, DestinationTarget); return; }
+	if (!TheRenderManager->RenderingToSceneTarget()) { ProcessImageSpaceShaders(Renderer, SourceTarget, DestinationTarget); return; }
 	//pipboy is rendered as a near-camera mesh into the same target. our cone
 	//math illuminates it because we forced viewmodel into the depth buffer.
 	//easiest fix: skip the entire effect chain while the pipboy menu is up.

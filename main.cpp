@@ -9,7 +9,6 @@
 
 static PluginHandle g_pluginHandle = 0xFFFFFFFF;
 static NVSEMessagingInterface* g_messaging = nullptr;
-static constexpr UInt32 kJG_OnRenderGameModeUpdate = 10014;
 
 //community/MCM convention: a "reload config" message so INI edits (incl. MCM, which
 //writes our config\BetterFlashlightNVSE.ini directly) apply instantly
@@ -18,11 +17,6 @@ static constexpr UInt32 kJG_OnRenderGameModeUpdate = 10014;
 static void DestroyEngineLight() {
 	if (TheShaderManager && TheShaderManager->Effects.Flashlight)
 		TheShaderManager->Effects.Flashlight->DestroyEngineLight();
-}
-
-static void JohnnyMessageHandler(NVSEMessagingInterface::Message* msg) {
-	if (msg->type == kJG_OnRenderGameModeUpdate && TheShaderManager && TheShaderManager->Effects.Flashlight)
-		TheShaderManager->Effects.Flashlight->PrepareB42OpticsRender();
 }
 
 static void MessageHandler(NVSEMessagingInterface::Message* msg) {
@@ -64,8 +58,6 @@ static void MessageHandler(NVSEMessagingInterface::Message* msg) {
 		//flashlight for suppression. hooks attach at NVSEPlugin_Load; render init runs later
 		DetectNVR();
 		FlashlightBridge::DetectMRC();
-		if (g_messaging)
-			g_messaging->RegisterListener(g_pluginHandle, "JohnnyGuitarNVSE", JohnnyMessageHandler);
 		break;
 	}
 }

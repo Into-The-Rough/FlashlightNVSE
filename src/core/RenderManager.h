@@ -12,6 +12,7 @@ public:
 	void				SetupSceneCamera();
 	float				GetObjectDistance(NiBound* Bound);
 	bool				IsReversedDepth();
+	bool				RenderingToSceneTarget();
 	NiDX9Renderer*		renderer;
 	D3DXMATRIX			WorldViewProjMatrix;
 	D3DXMATRIX			ViewProjMatrix;
