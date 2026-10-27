@@ -189,4 +189,9 @@ if exist "$(TargetDir)$(TargetName).pdb" copy /Y "$(TargetDir)$(TargetName).pdb"
     </PropertyGroup>
     <Error Condition="!Exists('$(ProjectDir)packages\Microsoft.DXSDK.D3DX.9.29.952.8\build\native\Microsoft.DXSDK.D3DX.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(ProjectDir)packages\Microsoft.DXSDK.D3DX.9.29.952.8\build\native\Microsoft.DXSDK.D3DX.targets'))" />
   </Target>
+  <Target Name="StageMod" BeforeTargets="PostBuildEvent" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <MakeDir Directories="$(ProjectDir)mod\NVSE\Plugins" />
+    <Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(ProjectDir)mod\NVSE\Plugins" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)COPYING.txt;$(ProjectDir)License.md" DestinationFolder="$(ProjectDir)mod" SkipUnchangedFiles="true" />
+  </Target>
 </Project>
